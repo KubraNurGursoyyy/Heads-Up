@@ -1,0 +1,28 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+.expo/
+coverage/
+*.log
+apps/mobile/android/
+apps/mobile/ios/
+
+# Local credentials and signing material
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+service-account*.json
+google-service-account*.json
+
+# Local IDE / OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

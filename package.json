@@ -1,0 +1,22 @@
+{
+  "name": "headsup",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/api",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "dev:api": "npm --workspace @headsup/api run start:dev",
+    "dev:worker": "npm --workspace @headsup/api run worker:dev",
+    "dev:mobile": "npm --workspace @headsup/mobile run start",
+    "build:api": "npm --workspace @headsup/api run build",
+    "prisma:generate": "npm --workspace @headsup/api run prisma:generate",
+    "prisma:migrate": "npm --workspace @headsup/api run prisma:migrate",
+    "prisma:deploy": "npm --workspace @headsup/api run prisma:deploy"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

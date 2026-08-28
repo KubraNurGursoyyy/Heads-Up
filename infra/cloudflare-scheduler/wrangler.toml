@@ -1,0 +1,9 @@
+name = "headsup-scheduler"
+main = "src/index.js"
+compatibility_date = "2026-08-28"
+
+[vars]
+API_URL = "https://YOUR-HEADSUP-API.vercel.app"
+
+[triggers]
+crons = ["*/15 * * * *", "0 * * * *"]
