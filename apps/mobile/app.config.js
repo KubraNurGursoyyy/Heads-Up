@@ -7,6 +7,11 @@ module.exports = {
       ['expo-build-properties', { android: { compileSdkVersion: 36, targetSdkVersion: 36, buildToolsVersion: '36.0.0' } }],
       ['expo-secure-store', { configureAndroidBackup: true }]
     ],
-    extra: { eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '' } }
+    extra: {
+      eas: {
+        projectId: 'f3666043-3ebe-4394-bbb8-8e277c0449c2',
+        owner: 'kubranurgursoyy',
+      }
+    }
   }
 };
