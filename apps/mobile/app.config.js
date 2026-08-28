@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: 'HeadsUp',
     slug: 'headsup',
-    owner: 'kubranurgursoyy',
+    owner: 'kubranurgursoyys-team',
     version: '0.1.0',
     orientation: 'portrait',
     userInterfaceStyle: 'automatic',
