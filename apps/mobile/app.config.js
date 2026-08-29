@@ -3,9 +3,10 @@ module.exports = {
     name: 'HeadsUp',
     slug: 'headsup',
     owner: 'kubranurgursoyys-team',
+
     version: '0.1.0',
     orientation: 'portrait',
-    userInterfaceStyle: 'automatic',
+    userInterfaceStyle: 'light',
 
     icon: './assets/icon.png',
 
@@ -15,19 +16,19 @@ module.exports = {
 
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#F7C8DA'
-      }
+        backgroundColor: '#F6A8C3',
+      },
     },
 
     plugins: [
       [
         'expo-splash-screen',
         {
-          image: './assets/splash-icon.png',
-          backgroundColor: '#F7C8DA',
-          imageWidth: 220,
-          resizeMode: 'contain'
-        }
+          image: './assets/splash.png',
+          backgroundColor: '#F6A8C3',
+          resizeMode: 'cover',
+          imageWidth: 390,
+        },
       ],
 
       [
@@ -35,8 +36,8 @@ module.exports = {
         {
           icon: './assets/notification-icon.png',
           color: '#F48FB1',
-          defaultChannel: 'important-news'
-        }
+          defaultChannel: 'important-news',
+        },
       ],
 
       [
@@ -45,23 +46,23 @@ module.exports = {
           android: {
             compileSdkVersion: 36,
             targetSdkVersion: 36,
-            buildToolsVersion: '36.0.0'
-          }
-        }
+            buildToolsVersion: '36.0.0',
+          },
+        },
       ],
 
       [
         'expo-secure-store',
         {
-          configureAndroidBackup: true
-        }
-      ]
+          configureAndroidBackup: true,
+        },
+      ],
     ],
 
     extra: {
       eas: {
-        projectId: 'f3666043-3ebe-4394-bbb8-8e277c0449c2'
-      }
-    }
-  }
+        projectId: 'f3666043-3ebe-4394-bbb8-8e277c0449c2',
+      },
+    },
+  },
 };
