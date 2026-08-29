@@ -1,10 +1,6 @@
 import React from 'react';
-
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fontFamilyMedium } from '../ui';
 
 type Props = {
   label: string;
@@ -12,63 +8,58 @@ type Props = {
   onPress: () => void;
 };
 
-export default function FilterChip({
-  label,
-  selected,
-  onPress,
-}: Props) {
+export default function FilterChip({ label, selected, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.root,
-
         selected && styles.selected,
-
         pressed && styles.pressed,
       ]}
     >
-      <Text
-        style={[
-          styles.text,
-          selected && styles.selectedText,
-        ]}
-      >
-        {label}
-      </Text>
+      <View style={[styles.marker, selected && styles.markerSelected]} />
+      <Text style={[styles.text, selected && styles.selectedText]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-
-    borderRadius: 999,
-
-    backgroundColor: 'rgba(255,255,255,0.78)',
-
+    minHeight: 36,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#FFD2E4',
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
   },
-
   selected: {
-    backgroundColor: '#FA91BA',
-    borderColor: '#FA91BA',
+    backgroundColor: colors.surfaceStrong,
+    borderColor: colors.gold,
   },
-
+  marker: {
+    width: 11,
+    height: 2,
+    backgroundColor: colors.goldDark,
+  },
+  markerSelected: {
+    width: 19,
+    backgroundColor: colors.magenta,
+  },
   text: {
-    color: '#936C80',
+    fontFamily: fontFamilyMedium,
+    color: colors.inkSoft,
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 10,
+    letterSpacing: 0.1,
   },
-
   selectedText: {
-    color: '#FFFFFF',
+    color: colors.ink,
   },
-
   pressed: {
-    opacity: 0.75,
+    opacity: 0.76,
   },
 });
