@@ -1,0 +1,3 @@
+ALTER TABLE "Watch"
+ADD COLUMN "matchMode" TEXT NOT NULL DEFAULT 'SINGLE',
+ADD COLUMN "intersectionTerms" JSONB;

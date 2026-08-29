@@ -1,55 +1,34 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
-
-const SPLASH_ASPECT = 945 / 2048;
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 type Props = { onDone: () => void };
 
 export default function StartupSplash({ onDone }: Props) {
-  const { width, height } = useWindowDimensions();
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.985)).current;
+  const scale = useRef(new Animated.Value(0.992)).current;
   const onDoneRef = useRef(onDone);
 
   useEffect(() => {
     onDoneRef.current = onDone;
   }, [onDone]);
 
-  const size = useMemo(() => {
-    const safeWidth = Math.max(1, width);
-    const safeHeight = Math.max(1, height);
-    const screenAspect = safeWidth / safeHeight;
-
-    if (screenAspect > SPLASH_ASPECT) {
-      return {
-        width: safeHeight * SPLASH_ASPECT,
-        height: safeHeight,
-      };
-    }
-
-    return {
-      width: safeWidth,
-      height: safeWidth / SPLASH_ASPECT,
-    };
-  }, [height, width]);
-
   useEffect(() => {
     const animation = Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 150,
+        duration: 140,
         useNativeDriver: true,
       }),
       Animated.timing(scale, {
         toValue: 1,
         duration: 420,
-        easing: Easing.out(Easing.ease),
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]);
 
     animation.start();
-    const timer = setTimeout(() => onDoneRef.current(), 650);
+    const timer = setTimeout(() => onDoneRef.current(), 720);
 
     return () => {
       clearTimeout(timer);
@@ -65,8 +44,6 @@ export default function StartupSplash({ onDone }: Props) {
         style={[
           styles.image,
           {
-            width: size.width,
-            height: size.height,
             opacity,
             transform: [{ scale }],
           },
@@ -79,13 +56,11 @@ export default function StartupSplash({ onDone }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#350727',
     overflow: 'hidden',
   },
   image: {
-    maxWidth: '100%',
-    maxHeight: '100%',
+    width: '100%',
+    height: '100%',
   },
 });

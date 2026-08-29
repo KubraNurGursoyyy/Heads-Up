@@ -64,3 +64,17 @@ test('manual scan result is rendered as a compact status', () => {
     'Geçmiş dahil · 20 kaynak incelendi · 6 yeni haber · 0 bildirim',
   );
 });
+
+test('intersection prompt is built from two separate inputs', async () => {
+  const { buildIntersectionPrompt } = await import('./watch-ui.ts');
+  assert.equal(
+    buildIntersectionPrompt('Neon Genesis Evangelion', 'Yōko Taro'),
+    'Neon Genesis Evangelion ile Yōko Taro kesişimindeki gelişmeleri takip et.',
+  );
+});
+
+test('intersection input comparison ignores accents', async () => {
+  const { canSaveIntersection } = await import('./watch-ui.ts');
+  assert.equal(canSaveIntersection('Yōko Taro', 'yoko taro'), false);
+  assert.equal(canSaveIntersection('Neon Genesis Evangelion', 'Yoko Taro'), true);
+});

@@ -49,3 +49,25 @@ export function formatRunResult(result: RunWatchResult): string {
   const prefix = result.historical ? 'Geçmiş dahil · ' : '';
   return `${prefix}${discovered} kaynak incelendi · ${attached} yeni haber · ${pushed} bildirim`;
 }
+
+export function buildIntersectionPrompt(left: string, right: string): string {
+  const a = normalizeInput(left);
+  const b = normalizeInput(right);
+  if (!a || !b) return '';
+  return `${a} ile ${b} kesişimindeki gelişmeleri takip et.`;
+}
+
+export function canSaveIntersection(left: string, right: string): boolean {
+  const a = normalizeInput(left);
+  const b = normalizeInput(right);
+  if (a.length < 2 || b.length < 2) return false;
+
+  const fold = (value: string) =>
+    normalizeInput(value)
+      .toLocaleLowerCase('tr-TR')
+      .replace(/ı/g, 'i')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  return fold(a) !== fold(b);
+}

@@ -1,18 +1,19 @@
+const easProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID || undefined;
+
 module.exports = {
   expo: {
     name: 'HeadsUp',
     slug: 'headsup',
-    owner: 'kubranurgursoyys-team',
     version: '0.1.0',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
-    icon: './assets/icon.png',
+    icon: './assets/icon-safe.png',
 
     android: {
       package: 'com.headsup.app',
       versionCode: 1,
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
+        foregroundImage: './assets/adaptive-icon-safe.png',
         backgroundColor: '#350727',
       },
     },
@@ -21,10 +22,10 @@ module.exports = {
       [
         'expo-splash-screen',
         {
-          image: './assets/splash-icon.png',
+          image: './assets/native-splash-transparent.png',
           backgroundColor: '#350727',
           resizeMode: 'contain',
-          imageWidth: 120,
+          imageWidth: 1,
         },
       ],
       [
@@ -54,9 +55,7 @@ module.exports = {
     ],
 
     extra: {
-      eas: {
-        projectId: 'f3666043-3ebe-4394-bbb8-8e277c0449c2',
-      },
+      eas: easProjectId ? { projectId: easProjectId } : {},
     },
   },
 };

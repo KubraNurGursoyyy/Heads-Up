@@ -16,5 +16,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm install
+      - run: npm run public:audit
       - run: npm run prisma:generate
       - run: npm run build:api

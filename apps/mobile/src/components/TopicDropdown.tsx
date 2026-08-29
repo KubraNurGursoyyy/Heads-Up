@@ -18,6 +18,7 @@ type Props = {
   selectedId: string | null;
   onChange: (id: string | null) => void;
   allLabel?: string;
+  compact?: boolean;
 };
 
 export default function TopicDropdown({
@@ -25,6 +26,7 @@ export default function TopicDropdown({
   selectedId,
   onChange,
   allLabel = 'Hepsi',
+  compact = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const selected = options.find(option => option.id === selectedId);
@@ -35,16 +37,16 @@ export default function TopicDropdown({
   }
 
   return (
-    <View style={styles.root}>
+<View style={[styles.root, compact && styles.rootCompact]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen(current => !current)}
-        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.trigger, compact && styles.triggerCompact, pressed && styles.pressed]}
       >
         <View style={styles.triggerTextArea}>
-          <Text style={styles.triggerMeta}>HABERLERİ FİLTRELE</Text>
-          <Text numberOfLines={1} style={styles.triggerText}>
+{compact ? null : <Text style={styles.triggerMeta}>HABERLERİ FİLTRELE</Text>}
+<Text numberOfLines={1} style={[styles.triggerText, compact && styles.triggerTextCompact]}>
             {selected?.label ?? allLabel}
           </Text>
         </View>
@@ -98,6 +100,7 @@ const styles = StyleSheet.create({
   root: {
     marginTop: 8,
   },
+  rootCompact: { marginTop: 4 },
   trigger: {
     minHeight: 54,
     flexDirection: 'row',
@@ -107,6 +110,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(236,217,167,0.55)',
     backgroundColor: 'rgba(83,13,58,0.76)',
+  },
+  triggerCompact: {
+    minHeight: 36,
+    paddingHorizontal: 10,
+    borderRadius: 8,
   },
   pressed: { opacity: 0.82 },
   triggerTextArea: { flex: 1 },
@@ -124,6 +132,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  triggerTextCompact: { marginTop: 0, fontSize: 10 },
   chevron: {
     width: 22,
     height: 18,

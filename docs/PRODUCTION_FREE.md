@@ -63,8 +63,9 @@ Setup:
 ```bash
 cd infra/cloudflare-scheduler
 npx wrangler login
+npx wrangler secret put API_URL
 npx wrangler secret put HEADSUP_CRON_SECRET
 npx wrangler deploy
 ```
 
-Before deploying, replace the `API_URL` value in `wrangler.toml` with the Vercel production URL. The cron secret must match the Vercel `HEADSUP_CRON_SECRET` environment variable.
+Keep the deployed API URL out of the repository. Store it as the Cloudflare Worker `API_URL` secret. The cron secret must match the server-side `HEADSUP_CRON_SECRET` environment variable.

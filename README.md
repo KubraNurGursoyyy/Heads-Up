@@ -148,3 +148,15 @@ Before public release:
 8. Push is sent only when the watch's notification policy allows it.
 
 See `docs/ARCHITECTURE.md`, `docs/ANDROID_PUSH.md`, and `docs/PROJECT_STATUS.md`.
+
+## Public repository safety
+
+Before changing the repository visibility to public, run:
+
+```powershell
+npm run public:prepare
+```
+
+This removes local environment files, deployment-provider state, build outputs and local Android credentials from Git tracking without deleting your local copies, then scans tracked source files for common secret/production-URL patterns.
+
+Keep production database URLs, API keys, JWT secrets, cron secrets, mobile bootstrap keys and deployed service URLs in the relevant provider environment settings rather than source control. If any credential was ever committed to Git history, removing the file in a later commit is not enough: rotate that credential before making the repository public and clean the Git history if necessary.
