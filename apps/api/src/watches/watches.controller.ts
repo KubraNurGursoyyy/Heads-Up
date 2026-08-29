@@ -26,7 +26,10 @@ export class WatchesController {
 
   @Post()
   create(@CurrentUser() user: JwtUser, @Body() dto: CreateWatchDto) {
-    return this.watches.create(user.sub, dto.prompt, dto.notificationMode);
+    return this.watches.create(user.sub, dto.prompt, dto.notificationMode, {
+      topic: dto.topicHint,
+      category: dto.categoryHint,
+    });
   }
 
   @Patch(':id')

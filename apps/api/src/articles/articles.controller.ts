@@ -18,6 +18,21 @@ export class ArticlesController {
     return this.articles.feed(user.sub, filter, category?.trim() || undefined, watchId);
   }
 
+  @Get('archive')
+  archive(
+    @CurrentUser() user: JwtUser,
+    @Query('page') page?: string,
+    @Query('category') category?: string,
+    @Query('watchId') watchId?: string,
+  ) {
+    return this.articles.archive(
+      user.sub,
+      page,
+      category?.trim() || undefined,
+      watchId,
+    );
+  }
+
   @Patch(':id/read')
   read(@CurrentUser() user: JwtUser, @Param('id') id: string) {
     return this.articles.markRead(user.sub, id);

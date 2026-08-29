@@ -20,6 +20,16 @@ export class CreateWatchDto {
   @IsOptional()
   @IsEnum(NotificationMode)
   notificationMode?: NotificationMode;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  topicHint?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  categoryHint?: string;
 }
 
 export class SuggestWatchDto {
@@ -43,4 +53,10 @@ export class UpdateWatchDto {
   @Min(0)
   @Max(1)
   importanceThreshold?: number;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  category?: string;
 }

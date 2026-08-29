@@ -87,6 +87,7 @@ model Article {
   description  String?
   sourceName   String?
   sourceType   String
+  imageUrl     String?
   publishedAt  DateTime?
   discoveredAt DateTime @default(now())
   watchArticles WatchArticle[]

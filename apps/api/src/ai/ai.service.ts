@@ -80,12 +80,15 @@ export class AiService {
         );
 
         const correctedPrompt = normalizeWhitespace(result.correctedPrompt) || originalPrompt;
+        const aiCategory = normalizeCategoryName(result.category);
+        const fallbackCategory = inferFallbackCategory(correctedPrompt);
+
         suggestion = {
           originalPrompt,
           correctedPrompt,
           changed: correctedPrompt !== originalPrompt,
           topic: normalizeWhitespace(result.topic).slice(0, 120) || originalPrompt.slice(0, 120),
-          category: normalizeCategoryName(result.category),
+          category: fallbackCategory !== 'Diğer' ? fallbackCategory : aiCategory,
         };
       } catch (error) {
         this.logger.warn(`Gemini watch suggestion unavailable; local fallback used: ${String(error)}`);
@@ -104,6 +107,24 @@ export class AiService {
     }
 
     return suggestion;
+  }
+
+  buildQuickWatch(
+    prompt: string,
+    hints?: { topic?: string; category?: string },
+  ): WatchInterpretation {
+    const cleanPrompt = normalizeWhitespace(prompt);
+    const fallback = this.fallbackInterpret(cleanPrompt);
+
+    return {
+      ...fallback,
+      topic: hints?.topic
+        ? normalizeWhitespace(hints.topic).slice(0, 120)
+        : fallback.topic,
+      category: hints?.category
+        ? normalizeCategoryName(hints.category)
+        : fallback.category,
+    };
   }
 
   async interpretWatch(prompt: string): Promise<WatchInterpretation> {
@@ -128,11 +149,14 @@ export class AiService {
         },
       );
 
+      const aiCategory = normalizeCategoryName(result.category);
+      const fallbackCategory = inferFallbackCategory(cleanPrompt);
+
       return {
         ...result,
         topic: normalizeWhitespace(result.topic).slice(0, 120),
         intent: normalizeWhitespace(result.intent),
-        category: normalizeCategoryName(result.category),
+        category: fallbackCategory !== 'Diğer' ? fallbackCategory : aiCategory,
         aliases: result.aliases.map(normalizeWhitespace).filter(Boolean).slice(0, 8),
         searchQueries: result.searchQueries.map(normalizeWhitespace).filter(Boolean).slice(0, 5),
         notifyEvents: result.notifyEvents.map(normalizeWhitespace).filter(Boolean).slice(0, 8),

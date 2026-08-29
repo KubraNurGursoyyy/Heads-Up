@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-
 import {
   Image,
   Platform,
@@ -8,57 +7,30 @@ import {
   Text,
   View,
 } from 'react-native';
-
 import { StatusBar } from 'expo-status-bar';
-
 import { ensureSingleUserSession } from './src/api';
-
-import {
-  registerPush,
-  subscribePushResponses,
-} from './src/push';
-
-import {
-  Loading,
-  ui,
-} from './src/ui';
-
+import { registerPush, subscribePushResponses } from './src/push';
+import { colors, fontFamily, Loading } from './src/ui';
 import StartupSplash from './src/components/StartupSplash';
 import PinkBackground from './src/components/PinkBackground';
-
-import BottomTabs, {
-  type AppTab,
-} from './src/components/BottomTabs';
-
+import BottomTabs, { type AppTab } from './src/components/BottomTabs';
 import FeedScreen from './src/screens/FeedScreen';
 import AddWatchScreen from './src/screens/AddWatchScreen';
 import WatchesScreen from './src/screens/WatchesScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import ArchiveScreen from './src/screens/ArchiveScreen';
 
 export default function App() {
-  const [tab, setTab] =
-    useState<AppTab>('feed');
-
-  const [bootReady, setBootReady] =
-    useState(false);
-
-  const [showSplash, setShowSplash] =
-    useState(true);
-
-  const [bootError, setBootError] =
-    useState<string | null>(null);
+  const [tab, setTab] = useState<AppTab>('feed');
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [bootReady, setBootReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [bootError, setBootError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      return;
-    }
-
-    const subscription =
-      subscribePushResponses();
-
-    return () => {
-      subscription.remove();
-    };
+    if (Platform.OS === 'web') return;
+    const subscription = subscribePushResponses();
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -71,40 +43,25 @@ export default function App() {
 
     try {
       await ensureSingleUserSession();
-
       if (Platform.OS !== 'web') {
-        void registerPush().catch(
-          () => undefined,
-        );
+        void registerPush().catch(() => undefined);
       }
     } catch (error) {
-      setBootError(
-        error instanceof Error
-          ? error.message
-          : 'Bilinmeyen bir hata oluştu.',
-      );
+      setBootError(error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu.');
     } finally {
       setBootReady(true);
     }
   }
 
   if (showSplash) {
-    return (
-      <StartupSplash
-        onDone={() =>
-          setShowSplash(false)
-        }
-      />
-    );
+    return <StartupSplash onDone={() => setShowSplash(false)} />;
   }
 
   if (!bootReady) {
     return (
       <PinkBackground>
-        <SafeAreaView
-          style={styles.safeArea}
-        >
-          <StatusBar style="dark" />
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style="light" />
           <Loading />
         </SafeAreaView>
       </PinkBackground>
@@ -114,45 +71,20 @@ export default function App() {
   if (bootError) {
     return (
       <PinkBackground>
-        <SafeAreaView
-          style={styles.safeArea}
-        >
-          <StatusBar style="dark" />
-
-          <View
-            style={styles.errorContainer}
-          >
-            <Image
-              source={require('./assets/logo.png')}
-              resizeMode="contain"
-              style={styles.errorLogo}
-            />
-
-            <View style={ui.card}>
-              <Text style={ui.h1}>
-                Minik bir sorun oldu 
-              </Text>
-
-              <Text
-                style={
-                  styles.errorDescription
-                }
-              >
-                HeadsUp sunucuya ulaşamadı.
-              </Text>
-
-              <Text
-                style={styles.errorMessage}
-              >
-                {bootError}
-              </Text>
-
-              <Text
-                style={styles.retry}
-                onPress={() =>
-                  void bootstrap()
-                }
-              >
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style="light" />
+          <View style={styles.errorContainer}>
+            <View style={styles.errorPanel}>
+              <View style={styles.errorGoldLine} />
+              <Image
+                source={require('./assets/logo.png')}
+                resizeMode="contain"
+                style={styles.errorLogo}
+              />
+              <Text style={styles.errorKicker}>HEADSUP / CONNECTION</Text>
+              <Text style={styles.errorTitle}>Sunucuya ulaşılamadı</Text>
+              <Text style={styles.errorDescription}>{bootError}</Text>
+              <Text style={styles.retry} onPress={() => void bootstrap()}>
                 Tekrar dene
               </Text>
             </View>
@@ -164,37 +96,23 @@ export default function App() {
 
   return (
     <PinkBackground>
-      <SafeAreaView
-        style={styles.safeArea}
-      >
-        <StatusBar style="dark" />
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="light" />
 
         <View style={styles.content}>
-          {tab === 'feed' && (
-            <FeedScreen />
-          )}
-
-          {tab === 'add' && (
-            <AddWatchScreen
-              onAdded={() =>
-                setTab('watches')
-              }
-            />
-          )}
-
-          {tab === 'watches' && (
-            <WatchesScreen />
-          )}
-
-          {tab === 'settings' && (
-            <SettingsScreen />
+          {archiveOpen ? (
+            <ArchiveScreen onBack={() => setArchiveOpen(false)} />
+          ) : (
+            <>
+              {tab === 'feed' && <FeedScreen onOpenArchive={() => setArchiveOpen(true)} />}
+              {tab === 'add' && <AddWatchScreen onAdded={() => setTab('watches')} />}
+              {tab === 'watches' && <WatchesScreen />}
+              {tab === 'settings' && <SettingsScreen />}
+            </>
           )}
         </View>
 
-        <BottomTabs
-          active={tab}
-          onChange={setTab}
-        />
+        {!archiveOpen ? <BottomTabs active={tab} onChange={setTab} /> : null}
       </SafeAreaView>
     </PinkBackground>
   );
@@ -205,39 +123,64 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-
   content: {
     flex: 1,
   },
-
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-
+  errorPanel: {
+    padding: 22,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  errorGoldLine: {
+    width: 44,
+    height: 2,
+    backgroundColor: colors.gold,
+    marginBottom: 12,
+  },
   errorLogo: {
-    width: 150,
-    height: 150,
-    alignSelf: 'center',
-    marginBottom: 18,
+    width: 76,
+    height: 76,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
   },
-
+  errorKicker: {
+    fontFamily,
+    color: colors.magenta,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+  },
+  errorTitle: {
+    fontFamily,
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    marginTop: 6,
+  },
   errorDescription: {
-    marginTop: 10,
-    color: '#936C80',
-  },
-
-  errorMessage: {
-    marginTop: 8,
-    color: '#B26B8B',
+    fontFamily,
+    marginTop: 9,
+    color: colors.inkSoft,
     fontSize: 12,
+    lineHeight: 18,
   },
-
   retry: {
-    marginTop: 20,
-    color: '#D9528B',
-    fontWeight: '900',
-    fontSize: 16,
+    fontFamily,
+    alignSelf: 'flex-start',
+    marginTop: 18,
+    color: colors.magenta,
+    fontWeight: '800',
+    fontSize: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.gold,
+    paddingBottom: 4,
   },
 });

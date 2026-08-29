@@ -17,9 +17,17 @@ export class QueueService implements OnModuleDestroy {
     }
   }
 
-  async enqueueWatch(watchId: string, force = false) {
+  async enqueueWatch(
+    watchId: string,
+    force = false,
+    allowInlineServerless = false,
+  ) {
     if (this.isServerless()) {
-      return this.pipeline.processWatch(watchId);
+      if (allowInlineServerless) {
+        return this.pipeline.processWatch(watchId);
+      }
+
+      return { queued: false, deferredToScheduler: true };
     }
 
     const minutes = Math.max(1, Number(process.env.WATCH_SCAN_MINUTES ?? 15));

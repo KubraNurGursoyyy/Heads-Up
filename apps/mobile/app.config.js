@@ -3,20 +3,17 @@ module.exports = {
     name: 'HeadsUp',
     slug: 'headsup',
     owner: 'kubranurgursoyys-team',
-
     version: '0.1.0',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
-
     icon: './assets/icon.png',
 
     android: {
       package: 'com.headsup.app',
       versionCode: 1,
-
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#F8DCE7',
+        backgroundColor: '#350727',
       },
     },
 
@@ -24,22 +21,20 @@ module.exports = {
       [
         'expo-splash-screen',
         {
-          image: './assets/splash.png',
-          backgroundColor: '#F8DCE7',
+          image: './assets/splash-icon.png',
+          backgroundColor: '#350727',
           resizeMode: 'contain',
-          imageWidth: 260,
+          imageWidth: 120,
         },
       ],
-
       [
         'expo-notifications',
         {
           icon: './assets/notification-icon.png',
-          color: '#C76A8E',
+          color: '#D31578',
           defaultChannel: 'important-news',
         },
       ],
-
       [
         'expo-build-properties',
         {
@@ -50,7 +45,6 @@ module.exports = {
           },
         },
       ],
-
       [
         'expo-secure-store',
         {

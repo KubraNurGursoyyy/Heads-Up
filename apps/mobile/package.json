@@ -7,7 +7,9 @@
     "start": "expo start",
     "android": "expo run:android",
     "prebuild": "expo prebuild",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "start:web": "expo start --web",
+    "export:web": "expo export --platform web --output-dir dist-web-test"
   },
   "dependencies": {
     "expo": "~57.0.17",

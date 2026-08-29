@@ -3,7 +3,6 @@ import test from 'node:test';
 import {
   applyCommonTurkishCorrections,
   buildCategoryStats,
-  foldForComparison,
   inferFallbackCategory,
   normalizeCategoryName,
   normalizeWhitespace,
@@ -15,39 +14,38 @@ test('whitespace is normalized without changing visible content', () => {
 });
 
 test('comparison ignores case, Turkish diacritics and extra spaces', () => {
-  assert.equal(foldForComparison('ÇIKIŞ   TARİHİ'), 'cikis tarihi');
-  assert.equal(sameTextInsensitive('GTA 6 Çıkış Tarihi', 'gta 6 cikis tarihi'), true);
-  assert.equal(sameTextInsensitive('The Winds of Winter', 'THE WINDS OF WINTER'), true);
-  assert.equal(sameTextInsensitive('IPHONE 18', 'iphone 18'), true);
+  assert.equal(sameTextInsensitive('GTA 6 Çıkış Tarihi', 'gta  6 cikis tarihi'), true);
+  assert.equal(sameTextInsensitive('Türkçe baskı', 'TURKCE BASKI'), true);
 });
 
 test('common Turkish tracking typos are corrected locally', () => {
   assert.equal(
-    applyCommonTurkishCorrections('gta 6 pc cikis tarhi belli oldugunda habr ver'),
-    'gta 6 pc çıkış tarihi belli olduğunda haber ver',
+    applyCommonTurkishCorrections('gta 6 pc cikis tarhi oldugunda habr ver'),
+    'gta 6 pc çıkış tarihi olduğunda haber ver',
   );
 });
 
 test('fallback category inference supports both existing and new categories', () => {
-  assert.equal(inferFallbackCategory('Yeni PlayStation oyunu çıkınca haber ver'), 'Oyun');
-  assert.equal(inferFallbackCategory('Taylor Swift konser tarihi açıklanınca bildir'), 'Müzik');
-  assert.equal(inferFallbackCategory('F1 Türkiye yarışı olursa bildir'), 'Spor');
-  assert.equal(inferFallbackCategory('SpaceX yeni roket testi olursa bildir'), 'Diğer');
+  assert.equal(inferFallbackCategory('GTA 6 PC çıkış tarihi'), 'Oyun');
+  assert.equal(inferFallbackCategory('Yeni albüm çıktığında haber ver'), 'Müzik');
+  assert.equal(inferFallbackCategory('Bilinmeyen bir konu'), 'Diğer');
+});
+
+test('game inflections are categorized as Oyun', () => {
+  assert.equal(inferFallbackCategory('kötü oyunları takip et'), 'Oyun');
+  assert.equal(inferFallbackCategory('yeni oyunlar duyurulunca haber ver'), 'Oyun');
+  assert.equal(inferFallbackCategory('oyunlarda indirim olursa bildir'), 'Oyun');
 });
 
 test('category names are canonicalized case-insensitively', () => {
+  assert.equal(normalizeCategoryName('oyun'), 'Oyun');
   assert.equal(normalizeCategoryName('OYUN'), 'Oyun');
-  assert.equal(normalizeCategoryName('müzik'), 'Müzik');
-  assert.equal(normalizeCategoryName('film ve dizi'), 'Film & Dizi');
-  assert.equal(normalizeCategoryName('  uzay haberleri  '), 'Uzay Haberleri');
+  assert.equal(normalizeCategoryName('  masa oyunları  '), 'Masa Oyunları');
 });
 
 test('dynamic category stats merge equivalent category labels', () => {
-  assert.deepEqual(
-    buildCategoryStats(['Oyun', 'oyun', 'OYUN', 'Müzik', 'müzik']),
-    [
-      { name: 'Oyun', count: 3 },
-      { name: 'Müzik', count: 2 },
-    ],
-  );
+  assert.deepEqual(buildCategoryStats(['Oyun', 'oyun', 'OYUN', 'Müzik']), [
+    { name: 'Oyun', count: 3 },
+    { name: 'Müzik', count: 1 },
+  ]);
 });

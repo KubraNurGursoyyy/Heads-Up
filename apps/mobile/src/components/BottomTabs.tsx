@@ -1,81 +1,37 @@
 import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fontFamily, fontFamilyMedium } from '../ui';
 
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
-export type AppTab =
-  | 'feed'
-  | 'add'
-  | 'watches'
-  | 'settings';
+export type AppTab = 'feed' | 'add' | 'watches' | 'settings';
 
 type Props = {
   active: AppTab;
   onChange: (tab: AppTab) => void;
 };
 
-const tabs: Array<{
-  value: AppTab;
-  label: string;
-}> = [
-  {
-    value: 'feed',
-    label: 'Haberler',
-  },
-  {
-    value: 'add',
-    label: 'Yeni Takip',
-  },
-  {
-    value: 'watches',
-    label: 'Takipler',
-  },
-  {
-    value: 'settings',
-    label: 'Ayarlar',
-  },
+const tabs: Array<{ value: AppTab; label: string; short: string }> = [
+  { value: 'feed', label: 'Haberler', short: '01' },
+  { value: 'add', label: 'Yeni Takip', short: '02' },
+  { value: 'watches', label: 'Takipler', short: '03' },
+  { value: 'settings', label: 'Ayarlar', short: '04' },
 ];
 
-export default function BottomTabs({
-  active,
-  onChange,
-}: Props) {
+export default function BottomTabs({ active, onChange }: Props) {
   return (
     <View style={styles.wrapper}>
+      <View style={styles.goldTop} />
       <View style={styles.root}>
         {tabs.map(tab => {
-          const selected =
-            active === tab.value;
-
+          const selected = active === tab.value;
           return (
             <Pressable
               key={tab.value}
-              onPress={() =>
-                onChange(tab.value)
-              }
-              style={styles.tab}
+              onPress={() => onChange(tab.value)}
+              style={({ pressed }) => [styles.tab, selected && styles.tabActive, pressed && styles.pressed]}
             >
-              <View
-                style={[
-                  styles.indicator,
-                  selected &&
-                    styles.indicatorActive,
-                ]}
-              />
-
-              <Text
-                style={[
-                  styles.label,
-                  selected &&
-                    styles.labelActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
+              <Text style={[styles.index, selected && styles.indexActive]}>{tab.short}</Text>
+              <Text style={[styles.label, selected && styles.labelActive]}>{tab.label}</Text>
+              <View style={[styles.line, selected && styles.lineActive]} />
             </Pressable>
           );
         })}
@@ -86,71 +42,72 @@ export default function BottomTabs({
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingHorizontal: 14,
-    paddingBottom: 10,
+    paddingHorizontal: 12,
+    paddingBottom: 9,
+    paddingTop: 4,
   },
-
+  goldTop: {
+    height: 1,
+    marginHorizontal: 16,
+    backgroundColor: 'rgba(236,217,167,0.52)',
+  },
   root: {
     flexDirection: 'row',
-
     minHeight: 66,
-
-    paddingHorizontal: 6,
-
-    backgroundColor: 'rgba(255,252,253,0.96)',
-
-    borderRadius: 22,
-
+    padding: 5,
+    backgroundColor: '#26051F',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#F0D6E0',
-
-    shadowColor: '#6A4556',
-
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-
-    shadowOpacity: 0.08,
-
-    shadowRadius: 20,
-
-    elevation: 4,
+    borderColor: '#8F3B68',
+    shadowColor: '#12010D',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 8,
   },
-
   tab: {
     flex: 1,
-
-    alignItems: 'center',
+    minWidth: 0,
+    paddingHorizontal: 5,
+    paddingVertical: 8,
+    borderRadius: 9,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-
-  indicator: {
-    width: 18,
-    height: 3,
-
-    borderRadius: 3,
-
-    marginBottom: 7,
-
+  tabActive: {
+    backgroundColor: '#74134E',
+    borderWidth: 1,
+    borderColor: 'rgba(236,217,167,0.28)',
+  },
+  index: {
+    fontFamily,
+    color: '#B982A0',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  indexActive: {
+    color: colors.goldSoft,
+  },
+  label: {
+    fontFamily: fontFamilyMedium,
+    color: '#D3A8BE',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  labelActive: {
+    color: colors.lightText,
+  },
+  line: {
+    width: 16,
+    height: 2,
+    marginTop: 6,
     backgroundColor: 'transparent',
   },
-
-  indicatorActive: {
-    backgroundColor: '#C76A8E',
+  lineActive: {
+    width: 30,
+    backgroundColor: colors.gold,
   },
-
-  label: {
-    color: '#A28A95',
-
-    fontSize: 11,
-
-    fontWeight: '600',
-  },
-
-  labelActive: {
-    color: '#704456',
-
-    fontWeight: '800',
-  },
+  pressed: { opacity: 0.84 },
 });

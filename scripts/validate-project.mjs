@@ -27,6 +27,23 @@ const required = [
   'apps/mobile/app.config.js',
   'apps/mobile/src/utils/watch-ui.ts',
   'apps/mobile/src/utils/watch-ui.test.mjs',
+  'apps/mobile/src/components/SoftProgressBar.tsx',
+  'apps/mobile/src/components/ConfirmModal.tsx',
+  'apps/mobile/src/components/CategoryPickerModal.tsx',
+  'apps/mobile/src/screens/ArchiveScreen.tsx',
+  'apps/mobile/src/settings.ts',
+  'apps/api/src/articles/archive-pagination.ts',
+  'apps/api/src/articles/archive-pagination.test.mjs',
+  'apps/api/src/sources/search-plan.ts',
+  'apps/api/src/sources/search-plan.test.mjs',
+  'apps/api/src/sources/book-search.ts',
+  'apps/api/src/sources/book-search.test.mjs',
+  'apps/api/src/sources/rss-image.ts',
+  'apps/api/src/sources/rss-image.test.mjs',
+  'apps/api/prisma/migrations/202608290003_article_image_url/migration.sql',
+  'apps/mobile/src/components/TopicDropdown.tsx',
+  'apps/mobile/src/utils/feed-topics.ts',
+  'apps/mobile/src/utils/feed-topics.test.mjs',
 ];
 
 for (const file of required) {
@@ -79,6 +96,10 @@ if (!watchesController.includes("@Get('categories')")) {
   errors.push('GET /watches/categories is missing.');
 }
 
+if (!watchesController.includes("@Post(':id/run')")) {
+  errors.push('POST /watches/:id/run is missing.');
+}
+
 const authModule = read('apps/api/src/auth/auth.module.ts');
 if (!authModule.includes('controllers: [AuthController]')) {
   errors.push('AuthController is not registered in AuthModule.');
@@ -103,6 +124,89 @@ if (
   errors.push(
     'apps/mobile/.env.example ends in /api, but the Nest API has no global /api prefix.',
   );
+}
+
+
+const watchesService = read('apps/api/src/watches/watches.service.ts');
+if (!watchesService.includes('buildQuickWatch')) {
+  errors.push('Watch creation is doing blocking interpretation instead of fast preparation.');
+}
+
+if (!/this\.pipeline\.processWatch\(id(?:,|\))/.test(watchesService)) {
+  errors.push('Manual scan must run the pipeline directly so the button works without a worker.');
+}
+if (!watchesService.includes('this.prisma.$transaction')) {
+  errors.push('Watch deletion must use a transaction.');
+}
+if (!watchesService.includes('normalizeCategoryName(data.category)')) {
+  errors.push('Watch category must be editable and normalized on update.');
+}
+
+const queueService = read('apps/api/src/jobs/queue.service.ts');
+if (!queueService.includes('allowInlineServerless')) {
+  errors.push('QueueService is missing non-blocking serverless watch creation behavior.');
+}
+
+
+
+const sourcesService = read('apps/api/src/sources/sources.service.ts');
+if (!sourcesService.includes('WATCH_HISTORICAL_RESULT_LIMIT')) {
+  errors.push('Historical discovery result limit is missing.');
+}
+if (!sourcesService.includes('buildGoogleNewsSearchPlan')) {
+  errors.push('Google News discovery must use the multilingual historical search plan.');
+}
+if (!sourcesService.includes('openLibraryCatalog')) {
+  errors.push('Book tracking must include the keyless Open Library catalog adapter.');
+}
+if (!sourcesService.includes('buildBookNewsQueries')) {
+  errors.push('Book tracking must add translation/publisher/ISBN discovery queries.');
+}
+const searchPlan = read('apps/api/src/sources/search-plan.ts');
+if (!searchPlan.includes("{ lang: 'en', country: 'US' }")) {
+  errors.push('Search plan must include English Google News as a fallback.');
+}
+if (!searchPlan.includes('when:1y') || !searchPlan.includes('after:${fiveYearsAgo(now)}')) {
+  errors.push('Search plan must include historical backfill queries.');
+}
+
+const articlesController = read('apps/api/src/articles/articles.controller.ts');
+if (!articlesController.includes("@Get('archive')")) {
+  errors.push('GET /feed/archive is missing.');
+}
+const articlesService = read('apps/api/src/articles/articles.service.ts');
+if (!articlesService.includes('ARCHIVE_PAGE_SIZE')) {
+  errors.push('Archive must use fixed server-side pagination.');
+}
+
+const watchesDto = read('apps/api/src/watches/watches.dto.ts');
+if (!/category\?:\s*string/.test(watchesDto)) {
+  errors.push('UpdateWatchDto must allow manual category changes.');
+}
+
+const watchesScreen = read('apps/mobile/src/screens/WatchesScreen.tsx');
+if (!watchesScreen.includes('ConfirmModal')) {
+  errors.push('Watch deletion must use the cross-platform confirmation modal.');
+}
+if (!watchesScreen.includes('CategoryPickerModal')) {
+  errors.push('Watch screen must allow manual category changes.');
+}
+
+const feedScreen = read('apps/mobile/src/screens/FeedScreen.tsx');
+if (!feedScreen.includes('onOpenArchive')) {
+  errors.push('Feed must expose the old-news archive entry point.');
+}
+
+const appConfig = read('apps/mobile/app.config.js');
+if (!appConfig.includes("resizeMode: 'contain'")) {
+  errors.push('Splash must use contain so the artwork is not cropped.');
+}
+if (!appConfig.includes("image: './assets/splash-icon.png'")) {
+  errors.push('Native splash must use the compact splash icon; the full artwork is fitted responsively in React.');
+}
+const splashWidth = Number(appConfig.match(/imageWidth:\s*(\d+)/)?.[1] ?? 0);
+if (!splashWidth || splashWidth > 240) {
+  errors.push('Native splash imageWidth must stay at 240px or below.');
 }
 
 const prismaSchema = read('apps/api/prisma/schema.prisma');

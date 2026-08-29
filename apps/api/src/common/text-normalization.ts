@@ -110,7 +110,7 @@ export function normalizeCategoryName(value: string | null | undefined): string 
 export function inferFallbackCategory(prompt: string): string {
   const value = foldForComparison(prompt);
 
-  if (/\b(oyun|game|steam|playstation|xbox|nintendo|ps5|pc)\b/.test(value)) return 'Oyun';
+  if (/\b(oyun[a-z0-9]*|game[a-z0-9]*|gaming|steam|playstation|xbox|nintendo|ps5|pc)\b/.test(value)) return 'Oyun';
   if (/\b(kitap|roman|baski|yayinevi|yazar|ceviri)\b/.test(value)) return 'Kitap';
   if (/\b(film|dizi|sezon|vizyon|sinema|netflix|disney|hbo)\b/.test(value)) return 'Film & Dizi';
   if (/\b(telefon|islemci|yazilim|surum|android|iphone|apple|samsung|teknoloji|ai|yapay zeka)\b/.test(value)) return 'Teknoloji';

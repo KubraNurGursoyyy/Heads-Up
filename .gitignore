@@ -36,3 +36,6 @@ Thumbs.db
 
 # TypeScript incremental state
 *.tsbuildinfo
+
+# Test web export
+**/dist-web-test/
