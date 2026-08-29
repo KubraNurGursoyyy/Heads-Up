@@ -26,6 +26,7 @@ test('common Turkish tracking typos are corrected locally', () => {
 });
 
 test('fallback category inference supports both existing and new categories', () => {
+  assert.equal(inferFallbackCategory('GTA 6'), 'Oyun');
   assert.equal(inferFallbackCategory('GTA 6 PC çıkış tarihi'), 'Oyun');
   assert.equal(inferFallbackCategory('Yeni albüm çıktığında haber ver'), 'Müzik');
   assert.equal(inferFallbackCategory('Bilinmeyen bir konu'), 'Diğer');

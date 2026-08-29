@@ -7,9 +7,9 @@ import FilterChip from '../components/FilterChip';
 import { FeedCard } from './FeedScreen';
 import type { ArchiveResponse, WatchCategory } from '../types';
 
-type Props = { onBack: () => void };
+type Props = { onHome: () => void };
 
-export default function ArchiveScreen({ onBack }: Props) {
+export default function ArchiveScreen({ onHome }: Props) {
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<WatchCategory[]>([]);
@@ -47,15 +47,11 @@ export default function ArchiveScreen({ onBack }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <View style={styles.backLine} />
-          <Text style={styles.backText}>Gündeme dön</Text>
-        </Pressable>
-
         <AppHeader
           title="Haber Arşivi"
           subtitle="Geçmiş taramalarında ve önceki kontrollerde bulduğumuz kayıtlar burada. Her sayfada 3 içerik gösterilir."
           kicker="HEADSUP / ARCHIVE"
+          onLogoPress={onHome}
         />
 
         <Divider />

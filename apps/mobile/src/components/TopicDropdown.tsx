@@ -7,10 +7,12 @@ import {
   View,
 } from 'react-native';
 import { colors, fontFamily, fontFamilyMedium } from '../ui';
+import HighlightedTopic from './HighlightedTopic';
 
 export type TopicDropdownOption = {
   id: string;
   label: string;
+  requiredTerms?: string[] | null;
 };
 
 type Props = {
@@ -46,9 +48,16 @@ export default function TopicDropdown({
       >
         <View style={styles.triggerTextArea}>
 {compact ? null : <Text style={styles.triggerMeta}>HABERLERİ FİLTRELE</Text>}
-<Text numberOfLines={1} style={[styles.triggerText, compact && styles.triggerTextCompact]}>
-            {selected?.label ?? allLabel}
-          </Text>
+{selected ? (
+            <HighlightedTopic
+              text={selected.label}
+              requiredTerms={selected.requiredTerms}
+              numberOfLines={1}
+              style={[styles.triggerText, compact && styles.triggerTextCompact]}
+            />
+          ) : (
+            <Text numberOfLines={1} style={[styles.triggerText, compact && styles.triggerTextCompact]}>{allLabel}</Text>
+          )}
         </View>
 
         <View style={[styles.chevron, open && styles.chevronOpen]}>
@@ -83,9 +92,12 @@ export default function TopicDropdown({
                   style={[styles.option, active && styles.optionSelected]}
                 >
                   <View style={[styles.optionRail, active && styles.optionRailSelected]} />
-                  <Text numberOfLines={2} style={[styles.optionText, active && styles.optionTextSelected]}>
-                    {option.label}
-                  </Text>
+                  <HighlightedTopic
+                    text={option.label}
+                    requiredTerms={option.requiredTerms}
+                    numberOfLines={2}
+                    style={[styles.optionText, active && styles.optionTextSelected]}
+                  />
                 </Pressable>
               );
             })}

@@ -1,31 +1,40 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fontFamily, fontFamilyMedium } from '../ui';
 
 type Props = {
   title: string;
   subtitle?: string;
   kicker?: string;
+  onLogoPress?: () => void;
 };
 
 export default function AppHeader({
   title,
   subtitle,
   kicker = 'HEADSUP / SMART TRACKING',
+  onLogoPress,
 }: Props) {
   return (
     <View style={styles.root}>
-      <Image
-        source={require('../../assets/logo.png')}
-        resizeMode="contain"
-        style={styles.logo}
-      />
+      <Pressable
+        accessibilityRole={onLogoPress ? 'button' : undefined}
+        accessibilityLabel={onLogoPress ? 'Ana sayfaya dön' : undefined}
+        disabled={!onLogoPress}
+        onPress={onLogoPress}
+        style={({ pressed }) => [styles.logoButton, pressed && onLogoPress && styles.logoPressed]}
+      >
+        <Image
+          source={require('../../assets/logo.png')}
+          resizeMode="contain"
+          style={styles.logo}
+        />
+      </Pressable>
 
       <View style={styles.textArea}>
         <Text style={styles.kicker}>{kicker}</Text>
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-
         <View style={styles.ruleRow}>
           <View style={styles.rulePink} />
           <View style={styles.ruleGold} />
@@ -42,14 +51,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 22,
   },
+  logoButton: {
+    width: 88,
+    minHeight: 88,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
   logo: {
-    width: 58,
-    height: 58,
-    marginRight: 13,
+    width: 88,
+    height: 88,
   },
-  textArea: {
-    flex: 1,
-  },
+  logoPressed: { opacity: 0.72, transform: [{ scale: 0.97 }] },
+  textArea: { flex: 1 },
   kicker: {
     fontFamily: fontFamilyMedium,
     color: colors.goldSoft,
@@ -74,24 +88,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     maxWidth: 470,
   },
-  ruleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 11,
-  },
-  rulePink: {
-    width: 48,
-    height: 2,
-    backgroundColor: colors.hotPink,
-  },
-  ruleGold: {
-    width: 22,
-    height: 2,
-    backgroundColor: colors.gold,
-  },
-  ruleFine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(236,217,167,0.22)',
-  },
+  ruleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 11 },
+  rulePink: { width: 48, height: 2, backgroundColor: colors.hotPink },
+  ruleGold: { width: 22, height: 2, backgroundColor: colors.gold },
+  ruleFine: { flex: 1, height: 1, backgroundColor: 'rgba(236,217,167,0.22)' },
 });

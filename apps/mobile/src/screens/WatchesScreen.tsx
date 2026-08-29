@@ -7,6 +7,8 @@ import SoftProgressBar from '../components/SoftProgressBar';
 import FilterChip from '../components/FilterChip';
 import ConfirmModal from '../components/ConfirmModal';
 import CategoryPickerModal from '../components/CategoryPickerModal';
+import EditWatchModal from '../components/EditWatchModal';
+import HighlightedTopic from '../components/HighlightedTopic';
 import {
   applyWatchUpdate,
   formatRunResult,
@@ -32,13 +34,15 @@ function modeLabel(mode: NotificationMode) {
   return labels[mode];
 }
 
-export default function WatchesScreen() {
+export default function WatchesScreen({ onHome }: { onHome?: () => void }) {
   const [data, setData] = useState<Watch[]>([]);
   const [categories, setCategories] = useState<WatchCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Watch | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [categoryTarget, setCategoryTarget] = useState<Watch | null>(null);
+  const [editTarget, setEditTarget] = useState<Watch | null>(null);
+  const [editing, setEditing] = useState(false);
   const [running, setRunning] = useState<Record<string, boolean>>({});
   const [runStatus, setRunStatus] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +76,7 @@ export default function WatchesScreen() {
 
   async function patch(
     watch: Watch,
-    body: Partial<Pick<Watch, 'active' | 'notificationMode' | 'category'>>,
+    body: Partial<Pick<Watch, 'active' | 'notificationMode' | 'category' | 'prompt' | 'requiredTerms'>>,
   ) {
     try {
       setError(null);
@@ -144,6 +148,7 @@ export default function WatchesScreen() {
             title="Takiplerim"
             subtitle="Aktif takipleri yönet, kategoriyi değiştir veya istediğin an manuel tarama başlat."
             kicker="HEADSUP / WATCH CONTROL"
+            onLogoPress={onHome}
           />
         </View>
 
@@ -177,7 +182,7 @@ export default function WatchesScreen() {
 
                 <View style={styles.titleRow}>
                   <View style={styles.titleArea}>
-                    <Text style={styles.title}>{item.topic}</Text>
+                    <HighlightedTopic text={item.topic} requiredTerms={item.requiredTerms} style={styles.title} />
                     <Text style={styles.intent}>{item.intent}</Text>
                   </View>
 
@@ -249,6 +254,12 @@ export default function WatchesScreen() {
                 <View style={styles.actions}>
                   <Button
                     secondary
+                    title="Düzenle"
+                    onPress={() => setEditTarget(item)}
+                    style={styles.action}
+                  />
+                  <Button
+                    secondary
                     title={item.active ? 'Duraklat' : 'Devam et'}
                     onPress={() => void patch(item, { active: !item.active })}
                     style={styles.action}
@@ -280,6 +291,30 @@ export default function WatchesScreen() {
         busy={deleting}
         onCancel={() => !deleting && setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
+      />
+
+
+      <EditWatchModal
+        watch={editTarget}
+        busy={editing}
+        onClose={() => !editing && setEditTarget(null)}
+        onSave={(prompt, requiredTerms) => {
+          if (!editTarget || editing) return;
+          const target = editTarget;
+          setEditing(true);
+          void api<Watch>(`/watches/${target.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ prompt, requiredTerms }),
+          })
+            .then(updated => {
+              setData(current => applyWatchUpdate(current, updated));
+              setEditTarget(null);
+              return api<WatchCategory[]>('/watches/categories');
+            })
+            .then(setCategories)
+            .catch(editError => setError(`Takip düzenlenemedi: ${(editError as Error).message}`))
+            .finally(() => setEditing(false));
+        }}
       />
 
       <CategoryPickerModal

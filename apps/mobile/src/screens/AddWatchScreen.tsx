@@ -1,27 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api';
 import { Button, colors, Divider, Field, fontFamily, fontFamilyMedium, SectionLabel } from '../ui';
 import AppHeader from '../components/AppHeader';
 import SoftProgressBar from '../components/SoftProgressBar';
 import CategoryPickerModal from '../components/CategoryPickerModal';
-import type {
-  NotificationMode,
-  WatchCategory,
-  WatchMatchMode,
-  WatchSuggestion,
-} from '../types';
+import RequiredTermsPicker from '../components/RequiredTermsPicker';
+import type { NotificationMode, WatchCategory, WatchSuggestion } from '../types';
 import { loadSettings } from '../settings';
 import {
-  buildIntersectionPrompt,
-  canSaveIntersection,
   effectiveCategory,
+  keepTermsPresentInText,
   normalizeInput,
   shouldOfferCorrection,
   shouldRequestSuggestion,
 } from '../utils/watch-ui';
 
-type Props = { onAdded: () => void };
+type Props = { onAdded: () => void; onHome?: () => void };
 
 const modes: Array<[NotificationMode, string, string]> = [
   ['IMPORTANT_ONLY', 'Sadece önemli gelişmeler', 'Önerilen'],
@@ -30,11 +25,10 @@ const modes: Array<[NotificationMode, string, string]> = [
   ['OFF', 'Bildirim kapalı', 'Sessiz'],
 ];
 
-export default function AddWatchScreen({ onAdded }: Props) {
-  const [matchMode, setMatchMode] = useState<WatchMatchMode>('SINGLE');
+export default function AddWatchScreen({ onAdded, onHome }: Props) {
   const [prompt, setPrompt] = useState('');
-  const [intersectionLeft, setIntersectionLeft] = useState('');
-  const [intersectionRight, setIntersectionRight] = useState('');
+  const [promptConfirmed, setPromptConfirmed] = useState(false);
+  const [requiredTerms, setRequiredTerms] = useState<string[]>([]);
   const [mode, setMode] = useState<NotificationMode>('IMPORTANT_ONLY');
   const [busy, setBusy] = useState(false);
   const [suggestionBusy, setSuggestionBusy] = useState(false);
@@ -45,91 +39,65 @@ export default function AddWatchScreen({ onAdded }: Props) {
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
-
-  const intersectionPrompt = useMemo(
-    () => buildIntersectionPrompt(intersectionLeft, intersectionRight),
-    [intersectionLeft, intersectionRight],
-  );
-
-  const analysisInput = matchMode === 'INTERSECTION' ? intersectionPrompt : normalizeInput(prompt);
+  const analysisInput = normalizeInput(prompt);
 
   useEffect(() => {
     void loadSettings().then(settings => {
       setMode(settings.defaultNotificationMode);
       setSuggestionsEnabled(settings.suggestionsEnabled);
     });
-
-    void api<WatchCategory[]>('/watches/categories')
-      .then(setCategories)
-      .catch(() => undefined);
+    void api<WatchCategory[]>('/watches/categories').then(setCategories).catch(() => undefined);
   }, []);
 
   useEffect(() => {
     const id = ++requestId.current;
-
     if (!suggestionsEnabled || !shouldRequestSuggestion(analysisInput)) {
       setSuggestion(null);
       setSuggestionBusy(false);
       return;
     }
-
     setSuggestionBusy(true);
-
     const timer = setTimeout(() => {
       void api<WatchSuggestion>('/watches/suggest', {
         method: 'POST',
         body: JSON.stringify({ prompt: analysisInput }),
       })
-        .then(result => {
-          if (requestId.current !== id) return;
-          setSuggestion(result);
-        })
-        .catch(() => {
-          if (requestId.current !== id) return;
-          setSuggestion(null);
-        })
-        .finally(() => {
-          if (requestId.current === id) setSuggestionBusy(false);
-        });
-    }, 700);
-
+        .then(result => { if (requestId.current === id) setSuggestion(result); })
+        .catch(() => { if (requestId.current === id) setSuggestion(null); })
+        .finally(() => { if (requestId.current === id) setSuggestionBusy(false); });
+    }, 550);
     return () => clearTimeout(timer);
   }, [analysisInput, suggestionsEnabled]);
 
   const selectedCategory = effectiveCategory(manualCategory, suggestion?.category);
-  const canSave = matchMode === 'INTERSECTION'
-    ? canSaveIntersection(intersectionLeft, intersectionRight)
-    : normalizeInput(prompt).length >= 3;
+  const canConfirm = analysisInput.length >= 3;
+  const canSave = canConfirm && promptConfirmed;
+
+  function updatePrompt(value: string) {
+    setPrompt(value);
+    setPromptConfirmed(false);
+    setRequiredTerms(current => keepTermsPresentInText(current, value));
+    setError(null);
+  }
 
   async function save() {
     if (!canSave) return;
-
-    const cleanPrompt = matchMode === 'INTERSECTION'
-      ? intersectionPrompt
-      : normalizeInput(prompt);
-
     try {
       setBusy(true);
       setError(null);
-
       await api('/watches', {
         method: 'POST',
         body: JSON.stringify({
-          prompt: cleanPrompt,
+          prompt: analysisInput,
           notificationMode: mode,
-          topicHint: matchMode === 'SINGLE' ? suggestion?.topic : undefined,
+          topicHint: suggestion?.topic,
           categoryHint: selectedCategory ?? undefined,
-          matchMode,
-          intersectionTerms:
-            matchMode === 'INTERSECTION'
-              ? [normalizeInput(intersectionLeft), normalizeInput(intersectionRight)]
-              : undefined,
+          requiredTerms,
         }),
       });
-
       setPrompt('');
-      setIntersectionLeft('');
-      setIntersectionRight('');
+      setPromptConfirmed(false);
+      setRequiredTerms([]);
       setSuggestion(null);
       setManualCategory(null);
       onAdded();
@@ -140,155 +108,72 @@ export default function AddWatchScreen({ onAdded }: Props) {
     }
   }
 
-  function changeMatchMode(next: WatchMatchMode) {
-    setMatchMode(next);
-    setSuggestion(null);
-    setManualCategory(null);
-    setError(null);
-  }
-
   function useSuggestion() {
-    if (!suggestion || matchMode !== 'SINGLE') return;
-    setPrompt(suggestion.correctedPrompt);
+    if (!suggestion) return;
+    updatePrompt(suggestion.correctedPrompt);
   }
 
   const showCorrection = Boolean(
-    matchMode === 'SINGLE' &&
-      suggestion &&
-      suggestion.changed &&
-      shouldOfferCorrection(prompt, suggestion.correctedPrompt),
+    suggestion && suggestion.changed && shouldOfferCorrection(prompt, suggestion.correctedPrompt),
   );
 
   return (
     <>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.root}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.root}>
         <AppHeader
           title="Yeni takip"
-          subtitle="Tek bir konuyu veya iki konunun kesişimini izle. Yazım, aksan ve büyük/küçük harf farkları eşleşmeyi bozmaz."
+          subtitle="Konunu yaz, onayla ve haberde mutlaka geçmesini istediğin kelimeleri seç. Yazım, aksan ve büyük/küçük harf farkları eşleşmeyi bozmaz."
           kicker="HEADSUP / CREATE WATCH"
+          onLogoPress={onHome}
         />
 
-        <SectionLabel>Takip türü</SectionLabel>
-        <View style={styles.modeSwitch}>
-          <Pressable
-            onPress={() => changeMatchMode('SINGLE')}
-            style={[styles.modeSwitchItem, matchMode === 'SINGLE' && styles.modeSwitchItemActive]}
-          >
-            <Text style={[styles.modeSwitchText, matchMode === 'SINGLE' && styles.modeSwitchTextActive]}>
-              Tek konu
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => changeMatchMode('INTERSECTION')}
-            style={[styles.modeSwitchItem, matchMode === 'INTERSECTION' && styles.modeSwitchItemActive]}
-          >
-            <Text style={[styles.modeSwitchText, matchMode === 'INTERSECTION' && styles.modeSwitchTextActive]}>
-              İki konunun kesişimi
-            </Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.sectionSpacer} />
-        <SectionLabel>{matchMode === 'INTERSECTION' ? 'Kesişim konuları' : 'Takip isteği'}</SectionLabel>
-
+        <SectionLabel>Takip isteği</SectionLabel>
         <View style={styles.promptCard}>
           <View style={styles.promptHeader}>
-            <View style={styles.promptIndex}>
-              <Text style={styles.promptIndexText}>01</Text>
-            </View>
+            <View style={styles.promptIndex}><Text style={styles.promptIndexText}>01</Text></View>
             <View style={styles.promptHeaderText}>
-              <Text style={styles.promptTitle}>
-                {matchMode === 'INTERSECTION'
-                  ? 'Hangi iki konunun kesişimini arayalım?'
-                  : 'Neyi takip etmemi istiyorsun?'}
-              </Text>
-              <Text style={styles.example}>
-                {matchMode === 'INTERSECTION'
-                  ? 'Örn. Neon Genesis Evangelion × Yōko Taro'
-                  : 'Örn. “GTA 6 PC çıkış tarihi belli olduğunda haber ver.”'}
-              </Text>
+              <Text style={styles.promptTitle}>Neyi takip etmemi istiyorsun?</Text>
+              <Text style={styles.example}>Örn. “Neon Genesis Evangelion Yōko Taro ile ilgili gelişmeleri takip et.”</Text>
             </View>
           </View>
-
           <Divider />
+          <Field
+            multiline
+            value={prompt}
+            onChangeText={updatePrompt}
+            placeholder="Takip edilecek konuyu doğal bir cümleyle yaz..."
+            autoCapitalize="sentences"
+            autoCorrect
+            spellCheck
+            style={styles.field}
+          />
 
-          {matchMode === 'INTERSECTION' ? (
-            <View style={styles.intersectionFields}>
-              <View>
-                <Text style={styles.fieldLabel}>KONU 1</Text>
-                <Field
-                  value={intersectionLeft}
-                  onChangeText={value => {
-                    setIntersectionLeft(value);
-                    setError(null);
-                  }}
-                  placeholder="Neon Genesis Evangelion"
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  style={styles.singleLineField}
-                />
-              </View>
+          <Pressable
+            disabled={!canConfirm}
+            onPress={() => setPromptConfirmed(true)}
+            style={({ pressed }) => [styles.confirmTopic, promptConfirmed && styles.confirmTopicDone, !canConfirm && styles.disabled, pressed && styles.pressed]}
+          >
+            <Text style={[styles.confirmTopicText, promptConfirmed && styles.confirmTopicTextDone]}>
+              {promptConfirmed ? 'Konu onaylandı' : 'Konuyu onayla'}
+            </Text>
+          </Pressable>
 
-              <View style={styles.intersectionConnector}>
-                <View style={styles.connectorLine} />
-                <Text style={styles.connectorText}>×</Text>
-                <View style={styles.connectorLine} />
-              </View>
-
-              <View>
-                <Text style={styles.fieldLabel}>KONU 2</Text>
-                <Field
-                  value={intersectionRight}
-                  onChangeText={value => {
-                    setIntersectionRight(value);
-                    setError(null);
-                  }}
-                  placeholder="Yōko Taro"
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  style={styles.singleLineField}
-                />
-              </View>
-
-              <Text style={styles.intersectionHint}>
-                “Yōko Taro” ile “Yoko Taro” aynı kabul edilir. Sonuç “Evangelion” ve “Yoko Taro” gibi güçlü eşleşmeler içeriyorsa da kesişim olarak değerlendirilebilir.
-              </Text>
-            </View>
-          ) : (
-            <Field
-              multiline
-              value={prompt}
-              onChangeText={value => {
-                setPrompt(value);
-                setError(null);
-              }}
-              placeholder="Takip edilecek konuyu doğal bir cümleyle yaz..."
-              autoCapitalize="sentences"
-              autoCorrect
-              spellCheck
-              style={styles.field}
-            />
-          )}
+          {promptConfirmed ? (
+            <RequiredTermsPicker text={analysisInput} selected={requiredTerms} onChange={setRequiredTerms} />
+          ) : null}
 
           <View style={styles.analysisPanel}>
             <View style={styles.analysisTop}>
               <Text style={styles.analysisLabel}>OTOMATİK ANALİZ</Text>
               {suggestionBusy ? <Text style={styles.analysisMuted}>Kontrol ediliyor...</Text> : null}
             </View>
-
             <View style={styles.analysisDivider} />
-
             <View style={styles.categoryRow}>
               <View style={styles.categoryCopy}>
                 <Text style={styles.categoryCaption}>Kategori</Text>
                 <Text style={styles.categoryValue}>{selectedCategory || 'Henüz belirlenmedi'}</Text>
                 {manualCategory ? <Text style={styles.manualBadge}>ELLE SEÇİLDİ</Text> : null}
               </View>
-
               <Pressable onPress={() => setCategoryPickerOpen(true)} style={styles.categoryButton}>
                 <Text style={styles.categoryButtonText}>{selectedCategory ? 'Değiştir' : 'Kategori seç'}</Text>
               </Pressable>
@@ -301,18 +186,9 @@ export default function AddWatchScreen({ onAdded }: Props) {
             <View style={styles.suggestionGoldLine} />
             <Text style={styles.suggestionEyebrow}>BUNU MU DEMEK İSTEDİNİZ?</Text>
             <Text style={styles.suggestionText}>{suggestion.correctedPrompt}</Text>
-
             <View style={styles.suggestionActions}>
-              <Pressable onPress={useSuggestion} style={styles.useSuggestionButton}>
-                <Text style={styles.useSuggestionText}>Düzeltmeyi kullan</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setSuggestion({ ...suggestion, changed: false })}
-                style={styles.ignoreButton}
-              >
-                <Text style={styles.ignoreText}>Yok say</Text>
-              </Pressable>
+              <Pressable onPress={useSuggestion} style={styles.useSuggestionButton}><Text style={styles.useSuggestionText}>Düzeltmeyi kullan</Text></Pressable>
+              <Pressable onPress={() => setSuggestion({ ...suggestion, changed: false })} style={styles.ignoreButton}><Text style={styles.ignoreText}>Yok say</Text></Pressable>
             </View>
           </View>
         ) : null}
@@ -323,171 +199,44 @@ export default function AddWatchScreen({ onAdded }: Props) {
           {modes.map(([value, label, tag]) => {
             const selected = mode === value;
             return (
-              <Pressable
-                key={value}
-                onPress={() => setMode(value)}
-                style={[styles.modeCard, selected && styles.modeCardSelected]}
-              >
-                <View style={[styles.radio, selected && styles.radioSelected]}>
-                  {selected ? <View style={styles.radioDot} /> : null}
-                </View>
-                <View style={styles.modeCopy}>
-                  <Text style={[styles.modeText, selected && styles.modeTextSelected]}>{label}</Text>
-                  <Text style={styles.modeTag}>{tag}</Text>
-                </View>
+              <Pressable key={value} onPress={() => setMode(value)} style={[styles.modeCard, selected && styles.modeCardSelected]}>
+                <View style={[styles.radio, selected && styles.radioSelected]}>{selected ? <View style={styles.radioDot} /> : null}</View>
+                <View style={styles.modeCopy}><Text style={[styles.modeText, selected && styles.modeTextSelected]}>{label}</Text><Text style={styles.modeTag}>{tag}</Text></View>
                 <View style={[styles.modeLine, selected && styles.modeLineSelected]} />
               </Pressable>
             );
           })}
         </View>
 
-        {error ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorTitle}>Takip oluşturulamadı</Text>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
-
-        <Button
-          title={busy ? 'Takip kaydediliyor...' : 'Takibi başlat'}
-          onPress={save}
-          disabled={busy || !canSave}
-          style={styles.button}
-        />
-
-        {busy ? (
-          <View style={styles.saveProgress}>
-            <SoftProgressBar label="Takip kaydediliyor. İlk haber taraması arka planda devam eder; bu ekranda kalman gerekmez." />
-          </View>
-        ) : null}
+        {error ? <View style={styles.errorBox}><Text style={styles.errorTitle}>Takip oluşturulamadı</Text><Text style={styles.errorText}>{error}</Text></View> : null}
+        <Button title={busy ? 'Takip kaydediliyor...' : 'Takibi başlat'} onPress={save} disabled={busy || !canSave} style={styles.button} />
+        {busy ? <View style={styles.saveProgress}><SoftProgressBar label="Takip kaydediliyor. İlk haber taraması arka planda devam eder." /></View> : null}
       </ScrollView>
 
-      <CategoryPickerModal
-        visible={categoryPickerOpen}
-        current={selectedCategory}
-        categories={categories}
-        onClose={() => setCategoryPickerOpen(false)}
-        onSelect={setManualCategory}
-      />
+      <CategoryPickerModal visible={categoryPickerOpen} current={selectedCategory} categories={categories} onClose={() => setCategoryPickerOpen(false)} onSelect={setManualCategory} />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 34,
-  },
-  modeSwitch: {
-    marginTop: 9,
-    flexDirection: 'row',
-    padding: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(236,217,167,0.36)',
-    backgroundColor: 'rgba(77,8,54,0.72)',
-    gap: 4,
-  },
-  modeSwitchItem: {
-    flex: 1,
-    minHeight: 42,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  modeSwitchItemActive: {
-    backgroundColor: colors.surface,
-    borderColor: colors.gold,
-  },
-  modeSwitchText: {
-    fontFamily: fontFamilyMedium,
-    color: '#E1BCD0',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  modeSwitchTextActive: { color: colors.ink },
-  promptCard: {
-    marginTop: 9,
-    padding: 18,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    shadowColor: colors.wine,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.07,
-    shadowRadius: 24,
-    elevation: 3,
-  },
+  root: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 34 },
+  promptCard: { marginTop: 9, padding: 18, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong, elevation: 3 },
   promptHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  promptIndex: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: colors.wine,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  promptIndexText: {
-    fontFamily,
-    color: colors.goldSoft,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
+  promptIndex: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.wine, alignItems: 'center', justifyContent: 'center' },
+  promptIndexText: { fontFamily, color: colors.goldSoft, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
   promptHeaderText: { flex: 1 },
-  promptTitle: {
-    fontFamily: fontFamilyMedium,
-    color: colors.ink,
-    fontSize: 17,
-    fontWeight: '800',
-    lineHeight: 22,
-  },
+  promptTitle: { fontFamily: fontFamilyMedium, color: colors.ink, fontSize: 17, fontWeight: '800', lineHeight: 22 },
   example: { fontFamily, color: colors.inkSoft, fontSize: 11, lineHeight: 17, marginTop: 4 },
   field: { width: '100%', minHeight: 120, textAlignVertical: 'top' },
-  singleLineField: { width: '100%', minHeight: 52 },
-  fieldLabel: {
-    fontFamily: fontFamilyMedium,
-    color: colors.wine,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1.25,
-    marginBottom: 6,
-  },
-  intersectionFields: { gap: 8 },
-  intersectionConnector: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
-  connectorLine: { flex: 1, height: 1, backgroundColor: colors.borderStrong },
-  connectorText: {
-    fontFamily: fontFamilyMedium,
-    color: colors.goldDark,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  intersectionHint: {
-    fontFamily,
-    color: colors.inkSoft,
-    fontSize: 10,
-    lineHeight: 16,
-    marginTop: 4,
-  },
-  analysisPanel: {
-    marginTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 12,
-  },
+  confirmTopic: { marginTop: 10, minHeight: 42, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.wine, borderWidth: 1, borderColor: colors.goldDark },
+  confirmTopicDone: { backgroundColor: '#A30F60' },
+  confirmTopicText: { fontFamily: fontFamilyMedium, color: colors.lightText, fontSize: 11, fontWeight: '800' },
+  confirmTopicTextDone: { color: colors.white },
+  disabled: { opacity: 0.42 },
+  pressed: { opacity: 0.82 },
+  analysisPanel: { marginTop: 14, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
   analysisTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  analysisLabel: {
-    fontFamily: fontFamilyMedium,
-    color: colors.wine,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
+  analysisLabel: { fontFamily: fontFamilyMedium, color: colors.wine, fontSize: 8, fontWeight: '800', letterSpacing: 1.2 },
   analysisMuted: { fontFamily, color: colors.inkMuted, fontSize: 9 },
   analysisDivider: { height: 1, backgroundColor: colors.border, marginVertical: 9 },
   categoryRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -495,24 +244,9 @@ const styles = StyleSheet.create({
   categoryCaption: { fontFamily, color: colors.inkMuted, fontSize: 9 },
   categoryValue: { fontFamily: fontFamilyMedium, color: colors.ink, fontSize: 13, fontWeight: '800', marginTop: 2 },
   manualBadge: { fontFamily, color: colors.magenta, fontSize: 7, fontWeight: '800', letterSpacing: 1, marginTop: 4 },
-  categoryButton: {
-    minHeight: 36,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.goldDark,
-    borderRadius: 8,
-  },
+  categoryButton: { minHeight: 36, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.goldDark, borderRadius: 8 },
   categoryButtonText: { fontFamily: fontFamilyMedium, color: colors.wine, fontSize: 9, fontWeight: '800' },
-  suggestionCard: {
-    marginTop: 12,
-    padding: 15,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
+  suggestionCard: { marginTop: 12, padding: 15, borderRadius: 12, backgroundColor: colors.surfaceMuted, borderWidth: 1, borderColor: colors.borderStrong },
   suggestionGoldLine: { width: 42, height: 2, backgroundColor: colors.gold, marginBottom: 9 },
   suggestionEyebrow: { fontFamily: fontFamilyMedium, color: colors.wine, fontSize: 8, fontWeight: '800', letterSpacing: 1.2 },
   suggestionText: { fontFamily, color: colors.ink, fontSize: 13, fontWeight: '700', lineHeight: 19, marginTop: 5 },
@@ -523,16 +257,7 @@ const styles = StyleSheet.create({
   ignoreText: { fontFamily: fontFamilyMedium, color: colors.inkSoft, fontSize: 9, fontWeight: '800' },
   sectionSpacer: { height: 18 },
   modeList: { marginTop: 9, gap: 8 },
-  modeCard: {
-    minHeight: 55,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+  modeCard: { minHeight: 55, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   modeCardSelected: { borderColor: colors.goldDark, backgroundColor: colors.surfaceStrong },
   radio: { width: 17, height: 17, borderRadius: 9, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: colors.magenta },

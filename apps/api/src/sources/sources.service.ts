@@ -33,7 +33,7 @@ export type DiscoverOptions = {
   prompt?: string;
   category?: string;
   aliases?: string[];
-  intersectionTerms?: string[];
+  requiredTerms?: string[];
   historical?: boolean;
 };
 
@@ -63,7 +63,7 @@ export class SourcesService {
       topic: options.topic,
       category: options.category,
       aliases: options.aliases,
-      intersectionTerms: options.intersectionTerms,
+      requiredTerms: options.requiredTerms,
       historical: options.historical,
       requestLimit,
       primaryLocale: {

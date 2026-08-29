@@ -56,37 +56,37 @@ test('category-aware English query uses game for Oyun', () => {
   );
 });
 
-test('intersection search combines both terms and creates accent-insensitive variants', () => {
+test('required-term search quotes all mandatory words and creates accent-insensitive variants', () => {
   const plan = buildGoogleNewsSearchPlan({
     baseQueries: [],
-    topic: 'Neon Genesis Evangelion × Yōko Taro',
+    topic: 'Neon Genesis Evangelion Yōko Taro',
     category: 'Oyun',
-    intersectionTerms: ['Neon Genesis Evangelion', 'Yōko Taro'],
+    requiredTerms: ['Evangelion', 'Yōko', 'Taro'],
     requestLimit: 16,
   });
 
   assert.equal(
-    plan.some(item => item.reason === 'intersection' && item.query.includes('"Neon Genesis Evangelion"') && item.query.includes('"Yōko Taro"')),
+    plan.some(item => item.reason === 'required' && item.query.includes('"Evangelion"') && item.query.includes('"Yōko"') && item.query.includes('"Taro"')),
     true,
   );
   assert.equal(
-    plan.some(item => item.reason === 'intersection' && item.query.toLocaleLowerCase('tr-TR').includes('yoko taro')),
+    plan.some(item => item.reason === 'required' && item.query.toLocaleLowerCase('tr-TR').includes('yoko')),
     true,
   );
 });
 
-test('historical intersection search keeps both terms in backfill requests', () => {
+test('historical required-term search keeps mandatory words in backfill requests', () => {
   const plan = buildGoogleNewsSearchPlan({
     baseQueries: [],
-    topic: 'Neon Genesis Evangelion × Yōko Taro',
-    intersectionTerms: ['Neon Genesis Evangelion', 'Yōko Taro'],
+    topic: 'Neon Genesis Evangelion Yōko Taro',
+    requiredTerms: ['Evangelion', 'Yōko', 'Taro'],
     historical: true,
     requestLimit: 16,
     now: new Date('2026-08-29T00:00:00Z'),
   });
 
   assert.equal(
-    plan.some(item => item.reason === 'intersection' && item.query.includes('when:1y')),
+    plan.some(item => item.reason === 'required' && item.query.includes('when:1y')),
     true,
   );
 });

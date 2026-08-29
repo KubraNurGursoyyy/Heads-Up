@@ -8,7 +8,7 @@ export type SearchPlanInput = {
   topic?: string;
   category?: string;
   aliases?: string[];
-  intersectionTerms?: string[];
+  requiredTerms?: string[];
   historical?: boolean;
   primaryLocale?: NewsLocale;
   requestLimit?: number;
@@ -19,7 +19,7 @@ export type SearchRequest = {
   query: string;
   lang: string;
   country: string;
-  reason: 'base' | 'exact' | 'tail' | 'category' | 'official' | 'recent' | 'history' | 'book' | 'intersection';
+  reason: 'base' | 'exact' | 'tail' | 'category' | 'official' | 'recent' | 'history' | 'book' | 'required';
 };
 
 function normalize(value: string | null | undefined) {
@@ -98,17 +98,17 @@ function accentFold(value: string) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-function intersectionQueries(values: string[] | undefined) {
-  const terms = unique(values ?? []).slice(0, 2);
-  if (terms.length !== 2) return [];
+function requiredQueries(values: string[] | undefined) {
+  const terms = unique(values ?? []).slice(0, 16);
+  if (!terms.length) return [];
 
   const folded = terms.map(accentFold);
-  return unique([
-    `${quote(terms[0])} ${quote(terms[1])}`,
-    `${terms[0]} ${terms[1]}`,
-    `${quote(folded[0])} ${quote(folded[1])}`,
-    `${folded[0]} ${folded[1]}`,
-  ]);
+  const quoted = terms.map(quote).join(' ');
+  const plain = terms.join(' ');
+  const foldedQuoted = folded.map(quote).join(' ');
+  const foldedPlain = folded.join(' ');
+
+  return unique([quoted, plain, foldedQuoted, foldedPlain]);
 }
 
 function fiveYearsAgo(now: Date) {
@@ -127,7 +127,7 @@ export function buildGoogleNewsSearchPlan(input: SearchPlanInput): SearchRequest
 
   const requests: SearchRequest[] = [];
   const seen = new Set<string>();
-  const intersections = intersectionQueries(input.intersectionTerms);
+  const required = requiredQueries(input.requiredTerms);
 
   const push = (
     query: string,
@@ -143,20 +143,20 @@ export function buildGoogleNewsSearchPlan(input: SearchPlanInput): SearchRequest
     requests.push({ query: normalizedQuery, ...locale, reason });
   };
 
-  for (const query of intersections) {
-    for (const locale of localeList) push(query, locale, 'intersection');
+  for (const query of required) {
+    for (const locale of localeList) push(query, locale, 'required');
   }
 
-  if (input.historical && intersections.length) {
-    const primaryIntersection = intersections[0];
-    const historicalIntersection = [
-      `${primaryIntersection} when:30d`,
-      `${primaryIntersection} when:1y`,
-      `${primaryIntersection} after:${fiveYearsAgo(now)}`,
+  if (input.historical && required.length) {
+    const primaryRequired = required[0];
+    const historicalRequired = [
+      `${primaryRequired} when:30d`,
+      `${primaryRequired} when:1y`,
+      `${primaryRequired} after:${fiveYearsAgo(now)}`,
     ];
 
-    for (const query of historicalIntersection) {
-      for (const locale of localeList) push(query, locale, 'intersection');
+    for (const query of historicalRequired) {
+      for (const locale of localeList) push(query, locale, 'required');
     }
   }
 

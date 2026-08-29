@@ -17,7 +17,7 @@
     "prisma:deploy": "npm --workspace @headsup/api run prisma:deploy",
     "dev:usb": "powershell -ExecutionPolicy Bypass -File ./dev-usb.ps1",
     "validate": "node scripts/validate-project.mjs",
-    "test:unit": "node --experimental-strip-types --test apps/api/src/common/text-normalization.test.mjs apps/api/src/common/intersection.test.mjs apps/api/src/articles/archive-pagination.test.mjs apps/api/src/sources/search-plan.test.mjs apps/api/src/sources/book-search.test.mjs apps/api/src/sources/rss-image.test.mjs apps/mobile/src/utils/watch-ui.test.mjs apps/mobile/src/utils/feed-topics.test.mjs",
+    "test:unit": "node --experimental-strip-types --test apps/api/src/common/text-normalization.test.mjs apps/api/src/common/required-terms.test.mjs apps/api/src/articles/archive-pagination.test.mjs apps/api/src/sources/search-plan.test.mjs apps/api/src/sources/book-search.test.mjs apps/api/src/sources/rss-image.test.mjs apps/mobile/src/utils/watch-ui.test.mjs apps/mobile/src/utils/feed-topics.test.mjs",
     "test:api": "npm run prisma:generate && npm run build:api",
     "test:mobile": "npm --workspace @headsup/mobile run check",
     "test": "npm run validate && npm run test:unit && npm run test:api && npm run test:mobile && npm run test:web",
