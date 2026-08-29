@@ -8,6 +8,7 @@ export type SearchPlanInput = {
   topic?: string;
   category?: string;
   aliases?: string[];
+  intersectionTerms?: string[];
   historical?: boolean;
   primaryLocale?: NewsLocale;
   requestLimit?: number;
@@ -18,7 +19,7 @@ export type SearchRequest = {
   query: string;
   lang: string;
   country: string;
-  reason: 'base' | 'exact' | 'tail' | 'category' | 'official' | 'recent' | 'history' | 'book';
+  reason: 'base' | 'exact' | 'tail' | 'category' | 'official' | 'recent' | 'history' | 'book' | 'intersection';
 };
 
 function normalize(value: string | null | undefined) {
@@ -90,6 +91,26 @@ function locales(primary?: NewsLocale) {
   });
 }
 
+
+function accentFold(value: string) {
+  return normalize(value)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function intersectionQueries(values: string[] | undefined) {
+  const terms = unique(values ?? []).slice(0, 2);
+  if (terms.length !== 2) return [];
+
+  const folded = terms.map(accentFold);
+  return unique([
+    `${quote(terms[0])} ${quote(terms[1])}`,
+    `${terms[0]} ${terms[1]}`,
+    `${quote(folded[0])} ${quote(folded[1])}`,
+    `${folded[0]} ${folded[1]}`,
+  ]);
+}
+
 function fiveYearsAgo(now: Date) {
   const date = new Date(now);
   date.setUTCFullYear(date.getUTCFullYear() - 5);
@@ -106,6 +127,7 @@ export function buildGoogleNewsSearchPlan(input: SearchPlanInput): SearchRequest
 
   const requests: SearchRequest[] = [];
   const seen = new Set<string>();
+  const intersections = intersectionQueries(input.intersectionTerms);
 
   const push = (
     query: string,
@@ -120,6 +142,23 @@ export function buildGoogleNewsSearchPlan(input: SearchPlanInput): SearchRequest
     seen.add(key);
     requests.push({ query: normalizedQuery, ...locale, reason });
   };
+
+  for (const query of intersections) {
+    for (const locale of localeList) push(query, locale, 'intersection');
+  }
+
+  if (input.historical && intersections.length) {
+    const primaryIntersection = intersections[0];
+    const historicalIntersection = [
+      `${primaryIntersection} when:30d`,
+      `${primaryIntersection} when:1y`,
+      `${primaryIntersection} after:${fiveYearsAgo(now)}`,
+    ];
+
+    for (const query of historicalIntersection) {
+      for (const locale of localeList) push(query, locale, 'intersection');
+    }
+  }
 
   for (const locale of localeList) {
     if (topic) push(quote(topic), locale, 'exact');

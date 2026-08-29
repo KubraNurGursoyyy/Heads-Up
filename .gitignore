@@ -4,6 +4,7 @@
 
 # Dependencies
 node_modules/
+**/node_modules/
 
 # Environment / secrets
 .env
@@ -12,20 +13,43 @@ node_modules/
 **/.env
 **/.env.*
 !**/.env.example
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+!**/android/app/debug.keystore.example
+google-services.json
+**/google-services.json
+service-account*.json
+.npmrc
+
+# Deployment-provider local state
+.vercel/
+.wrangler/
+.dev.vars
+.dev.vars.*
 
 # Build output
 dist/
+dist/
+**/dist/
 build/
+**/build/
 .expo/
-.vercel/
-.wrangler/
+**/.expo/
 .gradle/
+**/.gradle/
 .cxx/
+**/.cxx/
 **/android/app/build/
 **/android/build/
 
 # Local Android configuration
 **/android/local.properties
+**/android/app/debug.keystore
 
 # Logs / OS / IDE
 *.log

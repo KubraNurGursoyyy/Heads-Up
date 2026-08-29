@@ -21,6 +21,8 @@ const required = [
   'apps/api/src/worker.ts',
   'apps/api/src/common/text-normalization.ts',
   'apps/api/src/common/text-normalization.test.mjs',
+  'apps/api/src/common/intersection.ts',
+  'apps/api/src/common/intersection.test.mjs',
   'apps/mobile/package.json',
   'apps/mobile/.env.example',
   'apps/mobile/App.tsx',
@@ -41,6 +43,9 @@ const required = [
   'apps/api/src/sources/rss-image.ts',
   'apps/api/src/sources/rss-image.test.mjs',
   'apps/api/prisma/migrations/202608290003_article_image_url/migration.sql',
+  'apps/api/prisma/migrations/202608290004_watch_intersection/migration.sql',
+  'scripts/public-audit.mjs',
+  'scripts/prepare-public.ps1',
   'apps/mobile/src/components/TopicDropdown.tsx',
   'apps/mobile/src/utils/feed-topics.ts',
   'apps/mobile/src/utils/feed-topics.test.mjs',
@@ -201,12 +206,23 @@ const appConfig = read('apps/mobile/app.config.js');
 if (!appConfig.includes("resizeMode: 'contain'")) {
   errors.push('Splash must use contain so the artwork is not cropped.');
 }
-if (!appConfig.includes("image: './assets/splash-icon.png'")) {
-  errors.push('Native splash must use the compact splash icon; the full artwork is fitted responsively in React.');
+if (!appConfig.includes("image: './assets/native-splash-transparent.png'")) {
+  errors.push('Native splash must stay visually neutral so only the responsive splash artwork is shown.');
 }
 const splashWidth = Number(appConfig.match(/imageWidth:\s*(\d+)/)?.[1] ?? 0);
-if (!splashWidth || splashWidth > 240) {
-  errors.push('Native splash imageWidth must stay at 240px or below.');
+if (!splashWidth || splashWidth > 8) {
+  errors.push('Native splash placeholder must stay tiny so it never appears as a second logo splash.');
+}
+
+
+if (!watchesDto.includes('intersectionTerms')) {
+  errors.push('CreateWatchDto must support two-term intersection watches.');
+}
+if (!searchPlan.includes("reason: 'intersection'") && !searchPlan.includes("'intersection'")) {
+  errors.push('Search plan must include intersection queries.');
+}
+if (!feedScreen.includes('filtersCompact')) {
+  errors.push('Feed filters must compact while the news list is scrolled.');
 }
 
 const prismaSchema = read('apps/api/prisma/schema.prisma');

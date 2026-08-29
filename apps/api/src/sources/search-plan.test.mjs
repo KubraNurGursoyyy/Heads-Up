@@ -55,3 +55,38 @@ test('category-aware English query uses game for Oyun', () => {
     true,
   );
 });
+
+test('intersection search combines both terms and creates accent-insensitive variants', () => {
+  const plan = buildGoogleNewsSearchPlan({
+    baseQueries: [],
+    topic: 'Neon Genesis Evangelion × Yōko Taro',
+    category: 'Oyun',
+    intersectionTerms: ['Neon Genesis Evangelion', 'Yōko Taro'],
+    requestLimit: 16,
+  });
+
+  assert.equal(
+    plan.some(item => item.reason === 'intersection' && item.query.includes('"Neon Genesis Evangelion"') && item.query.includes('"Yōko Taro"')),
+    true,
+  );
+  assert.equal(
+    plan.some(item => item.reason === 'intersection' && item.query.toLocaleLowerCase('tr-TR').includes('yoko taro')),
+    true,
+  );
+});
+
+test('historical intersection search keeps both terms in backfill requests', () => {
+  const plan = buildGoogleNewsSearchPlan({
+    baseQueries: [],
+    topic: 'Neon Genesis Evangelion × Yōko Taro',
+    intersectionTerms: ['Neon Genesis Evangelion', 'Yōko Taro'],
+    historical: true,
+    requestLimit: 16,
+    now: new Date('2026-08-29T00:00:00Z'),
+  });
+
+  assert.equal(
+    plan.some(item => item.reason === 'intersection' && item.query.includes('when:1y')),
+    true,
+  );
+});

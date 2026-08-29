@@ -1,7 +1,11 @@
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNumber,
+  IsIn,
   IsOptional,
   IsString,
   Max,
@@ -20,6 +24,19 @@ export class CreateWatchDto {
   @IsOptional()
   @IsEnum(NotificationMode)
   notificationMode?: NotificationMode;
+
+  @IsOptional()
+  @IsIn(['SINGLE', 'INTERSECTION'])
+  matchMode?: 'SINGLE' | 'INTERSECTION';
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(2)
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(120, { each: true })
+  intersectionTerms?: string[];
 
   @IsOptional()
   @IsString()

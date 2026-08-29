@@ -15,13 +15,11 @@ export default function AppHeader({
 }: Props) {
   return (
     <View style={styles.root}>
-      <View style={styles.logoFrame}>
-        <Image
-          source={require('../../assets/logo.png')}
-          resizeMode="contain"
-          style={styles.logo}
-        />
-      </View>
+      <Image
+        source={require('../../assets/logo.png')}
+        resizeMode="contain"
+        style={styles.logo}
+      />
 
       <View style={styles.textArea}>
         <Text style={styles.kicker}>{kicker}</Text>
@@ -44,19 +42,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 22,
   },
-  logoFrame: {
-    width: 60,
-    height: 60,
-    marginRight: 13,
-    borderWidth: 1,
-    borderColor: 'rgba(236,217,167,0.56)',
-    backgroundColor: 'rgba(116,19,79,0.48)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   logo: {
-    width: 50,
-    height: 50,
+    width: 58,
+    height: 58,
+    marginRight: 13,
   },
   textArea: {
     flex: 1,

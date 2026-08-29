@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
@@ -10,6 +10,15 @@ import {
   normalizeWhitespace,
   sameTextInsensitive,
 } from '../common/text-normalization';
+import {
+  buildIntersectionPrompt,
+  buildIntersectionTopic,
+  intersectionKey,
+  MATCH_MODE_INTERSECTION,
+  MATCH_MODE_SINGLE,
+  normalizeIntersectionTerms,
+  type MatchMode,
+} from '../common/intersection';
 
 @Injectable()
 export class WatchesService {
@@ -47,33 +56,78 @@ export class WatchesService {
     userId: string,
     prompt: string,
     mode: NotificationMode = 'IMPORTANT_ONLY',
-    hints?: { topic?: string; category?: string },
+    hints?: {
+      topic?: string;
+      category?: string;
+      matchMode?: MatchMode;
+      intersectionTerms?: string[];
+    },
   ) {
-    const cleanPrompt = normalizeWhitespace(prompt);
+    const matchMode = hints?.matchMode === MATCH_MODE_INTERSECTION
+      ? MATCH_MODE_INTERSECTION
+      : MATCH_MODE_SINGLE;
+    const intersectionTerms = matchMode === MATCH_MODE_INTERSECTION
+      ? normalizeIntersectionTerms(hints?.intersectionTerms)
+      : [];
+
+    if (matchMode === MATCH_MODE_INTERSECTION && intersectionTerms.length !== 2) {
+      throw new BadRequestException('Kesişim takibi için iki farklı konu gerekli.');
+    }
+
+    const cleanPrompt = matchMode === MATCH_MODE_INTERSECTION
+      ? buildIntersectionPrompt(intersectionTerms)
+      : normalizeWhitespace(prompt);
 
     const existing = await this.prisma.watch.findMany({
       where: { userId },
-      select: { prompt: true },
+      select: { prompt: true, matchMode: true, intersectionTerms: true },
     });
 
-    if (existing.some(watch => sameTextInsensitive(watch.prompt, cleanPrompt))) {
+    const duplicate = existing.some(watch => {
+      if (matchMode === MATCH_MODE_INTERSECTION) {
+        return (
+          watch.matchMode === MATCH_MODE_INTERSECTION &&
+          intersectionKey(watch.intersectionTerms) === intersectionKey(intersectionTerms)
+        );
+      }
+      return watch.matchMode !== MATCH_MODE_INTERSECTION && sameTextInsensitive(watch.prompt, cleanPrompt);
+    });
+
+    if (duplicate) {
       throw new ConflictException(
-        'Bu takip zaten mevcut. Büyük/küçük harf veya Türkçe karakter farkları ayrı takip sayılmaz.',
+        'Bu takip zaten mevcut. Büyük/küçük harf veya aksan farkları ayrı takip sayılmaz.',
       );
     }
 
     const parsed = this.ai.buildQuickWatch(cleanPrompt, hints);
     const category = normalizeCategoryName(parsed.category);
+    const topic = matchMode === MATCH_MODE_INTERSECTION
+      ? buildIntersectionTopic(intersectionTerms)
+      : normalizeWhitespace(parsed.topic);
+    const intent = matchMode === MATCH_MODE_INTERSECTION
+      ? `${intersectionTerms[0]} ve ${intersectionTerms[1]} ile birlikte ilgili gelişmeleri takip et.`
+      : normalizeWhitespace(parsed.intent);
+    const searchQueries = matchMode === MATCH_MODE_INTERSECTION
+      ? [
+          `"${intersectionTerms[0]}" "${intersectionTerms[1]}"`,
+          `${intersectionTerms[0]} ${intersectionTerms[1]}`,
+          ...parsed.searchQueries,
+        ]
+      : parsed.searchQueries;
 
     const watch = await this.prisma.watch.create({
       data: {
         userId,
         prompt: cleanPrompt,
-        topic: normalizeWhitespace(parsed.topic),
-        intent: normalizeWhitespace(parsed.intent),
+        topic,
+        intent,
         category,
-        aliases: parsed.aliases,
-        searchQueries: parsed.searchQueries,
+        matchMode,
+        intersectionTerms: matchMode === MATCH_MODE_INTERSECTION ? intersectionTerms : undefined,
+        aliases: matchMode === MATCH_MODE_INTERSECTION
+          ? [...new Set([...intersectionTerms, ...parsed.aliases])]
+          : parsed.aliases,
+        searchQueries,
         notifyEvents: parsed.notifyEvents,
         notificationMode: mode,
         importanceThreshold: Number(process.env.AI_IMPORTANCE_THRESHOLD ?? 0.72),

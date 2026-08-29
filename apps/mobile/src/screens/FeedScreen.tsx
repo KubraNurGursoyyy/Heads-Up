@@ -39,6 +39,7 @@ export default function FeedScreen({ onOpenArchive }: Props) {
   const [loading, setLoading] = useState(true);
   const [settingsReady, setSettingsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filtersCompact, setFiltersCompact] = useState(false);
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
@@ -96,14 +97,21 @@ export default function FeedScreen({ onOpenArchive }: Props) {
 
   return (
     <View style={styles.root}>
-      <View style={styles.headerArea}>
-        <AppHeader
-          title="Gündem"
-          subtitle="Takiplerinle ilgili bulduğumuz son 12 kayıt burada. Hepsi yeni olmak zorunda değil; yeni bir gelişme bulunduğunda en üste eklenir."
-          kicker="HEADSUP / DISCOVERY FEED"
-        />
+      <View style={[styles.headerArea, filtersCompact && styles.headerAreaCompact]}>
+        {filtersCompact ? (
+          <View style={styles.compactHeaderRow}>
+            <Text style={styles.compactHeaderTitle}>Gündem</Text>
+            <Text style={styles.compactHeaderMeta}>FİLTRELER</Text>
+          </View>
+        ) : (
+          <AppHeader
+            title="Gündem"
+            subtitle="Takiplerinle ilgili son bulunan kayıtlar burada. Bir kaydın burada görünmesi yeni yayımlandığı anlamına gelmez; yayın tarihi haber kartında gösterilir."
+            kicker="HEADSUP / DISCOVERY FEED"
+          />
+        )}
 
-        <View style={styles.headerControls}>
+        <View style={[styles.headerControls, filtersCompact && styles.headerControlsCompact]}>
           <View style={styles.streamBadge}>
             <View style={styles.streamDot} />
             <Text style={styles.streamText}>SON KAYITLAR</Text>
@@ -115,17 +123,18 @@ export default function FeedScreen({ onOpenArchive }: Props) {
           </Pressable>
         </View>
 
-        <Divider />
+        {filtersCompact ? null : <Divider />}
 
-        <SectionLabel>Kategoriler</SectionLabel>
+        {filtersCompact ? null : <SectionLabel>Kategoriler</SectionLabel>}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
+          contentContainerStyle={[styles.chips, filtersCompact && styles.chipsCompact]}
         >
           <FilterChip
             label="Tümü"
             selected={category === null}
+            compact={filtersCompact}
             onPress={() => {
               setCategory(null);
               setWatchId(null);
@@ -136,6 +145,7 @@ export default function FeedScreen({ onOpenArchive }: Props) {
               key={item.name}
               label={`${item.name} ${item.count}`}
               selected={category?.toLocaleLowerCase('tr-TR') === item.name.toLocaleLowerCase('tr-TR')}
+              compact={filtersCompact}
               onPress={() => {
                 setCategory(item.name);
                 setWatchId(null);
@@ -144,28 +154,31 @@ export default function FeedScreen({ onOpenArchive }: Props) {
           ))}
         </ScrollView>
 
-        <View style={styles.topicSection}>
-          <View style={styles.topicSectionHeader}>
-            <SectionLabel>Başlıklar</SectionLabel>
-            <Text style={styles.topicSectionMeta}>
-              {category ? `${category} içindeki takipler` : 'Tüm takipler'} · alfabetik
-            </Text>
-          </View>
+        <View style={[styles.topicSection, filtersCompact && styles.topicSectionCompact]}>
+          {filtersCompact ? null : (
+            <View style={styles.topicSectionHeader}>
+              <SectionLabel>Başlıklar</SectionLabel>
+              <Text style={styles.topicSectionMeta}>
+                {category ? `${category} içindeki takipler` : 'Tüm takipler'} · alfabetik
+              </Text>
+            </View>
+          )}
 
           <TopicDropdown
             options={topicOptions.map(watch => ({ id: watch.id, label: watch.topic }))}
             selectedId={watchId}
             onChange={setWatchId}
             allLabel="Hepsi"
+            compact={filtersCompact}
           />
         </View>
 
-        <View style={styles.filtersRow}>
-          <SectionLabel>Görünüm</SectionLabel>
-          <View style={styles.filters}>
-            <FilterChip label="Hepsi" selected={filter === 'all'} onPress={() => setFilter('all')} />
-            <FilterChip label="Önemli" selected={filter === 'important'} onPress={() => setFilter('important')} />
-            <FilterChip label="Okunmamış" selected={filter === 'unread'} onPress={() => setFilter('unread')} />
+        <View style={[styles.filtersRow, filtersCompact && styles.filtersRowCompact]}>
+          {filtersCompact ? null : <SectionLabel>Görünüm</SectionLabel>}
+          <View style={[styles.filters, filtersCompact && styles.filtersCompact]}>
+            <FilterChip label="Hepsi" selected={filter === 'all'} compact={filtersCompact} onPress={() => setFilter('all')} />
+            <FilterChip label="Önemli" selected={filter === 'important'} compact={filtersCompact} onPress={() => setFilter('important')} />
+            <FilterChip label="Okunmamış" selected={filter === 'unread'} compact={filtersCompact} onPress={() => setFilter('unread')} />
           </View>
         </View>
       </View>
@@ -186,6 +199,11 @@ export default function FeedScreen({ onOpenArchive }: Props) {
           data={items}
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={32}
+          onScroll={event => {
+            const nextCompact = event.nativeEvent.contentOffset.y > 56;
+            setFiltersCompact(current => (current === nextCompact ? current : nextCompact));
+          }}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<EmptyFeed />}
           renderItem={({ item, index }) => <FeedCard item={item} index={index} />}
@@ -289,12 +307,36 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 12,
   },
+  headerAreaCompact: {
+    paddingTop: 8,
+    paddingBottom: 7,
+  },
+  compactHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  compactHeaderTitle: {
+    fontFamily: fontFamilyMedium,
+    color: colors.lightText,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  compactHeaderMeta: {
+    fontFamily: fontFamilyMedium,
+    color: colors.goldSoft,
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
   headerControls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
   },
+  headerControlsCompact: { marginBottom: 2 },
   streamBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -323,7 +365,9 @@ const styles = StyleSheet.create({
   },
   archiveLine: { width: 52, height: 2, backgroundColor: colors.gold, marginTop: 5 },
   chips: { gap: 7, paddingTop: 9, paddingRight: 18 },
+  chipsCompact: { gap: 5, paddingTop: 5 },
   topicSection: { marginTop: 15 },
+  topicSectionCompact: { marginTop: 5 },
   topicSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -338,7 +382,9 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   filtersRow: { marginTop: 15 },
+  filtersRowCompact: { marginTop: 6 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 8 },
+  filtersCompact: { marginTop: 4, gap: 5 },
   errorBox: {
     marginHorizontal: 18,
     marginBottom: 10,

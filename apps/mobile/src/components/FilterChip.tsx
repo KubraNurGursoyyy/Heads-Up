@@ -6,20 +6,22 @@ type Props = {
   label: string;
   selected: boolean;
   onPress: () => void;
+  compact?: boolean;
 };
 
-export default function FilterChip({ label, selected, onPress }: Props) {
+export default function FilterChip({ label, selected, onPress, compact = false }: Props) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.root,
+        compact && styles.compact,
         selected && styles.selected,
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.marker, selected && styles.markerSelected]} />
-      <Text style={[styles.text, selected && styles.selectedText]}>{label}</Text>
+      <View style={[styles.marker, compact && styles.markerCompact, selected && styles.markerSelected]} />
+      <Text style={[styles.text, compact && styles.textCompact, selected && styles.selectedText]}>{label}</Text>
     </Pressable>
   );
 }
@@ -36,6 +38,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
   },
+  compact: {
+    minHeight: 29,
+    paddingHorizontal: 8,
+    borderRadius: 7,
+  },
   selected: {
     backgroundColor: colors.surfaceStrong,
     borderColor: colors.gold,
@@ -45,6 +52,7 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: colors.goldDark,
   },
+  markerCompact: { width: 8 },
   markerSelected: {
     width: 19,
     backgroundColor: colors.magenta,
@@ -56,6 +64,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.1,
   },
+  textCompact: { fontSize: 8 },
   selectedText: {
     color: colors.ink,
   },

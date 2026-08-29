@@ -24,6 +24,8 @@ export type DiscoveredArticle = {
   sourceType: string;
   imageUrl?: string;
   publishedAt?: Date;
+  searchReason?: SearchRequest['reason'];
+  matchedQuery?: string;
 };
 
 export type DiscoverOptions = {
@@ -31,6 +33,7 @@ export type DiscoverOptions = {
   prompt?: string;
   category?: string;
   aliases?: string[];
+  intersectionTerms?: string[];
   historical?: boolean;
 };
 
@@ -60,6 +63,7 @@ export class SourcesService {
       topic: options.topic,
       category: options.category,
       aliases: options.aliases,
+      intersectionTerms: options.intersectionTerms,
       historical: options.historical,
       requestLimit,
       primaryLocale: {
@@ -147,6 +151,8 @@ export class SourcesService {
             sourceType: `google_news_rss_${request.lang}`,
             imageUrl: extractRssImage(item),
             publishedAt: this.safeDate(item.isoDate ?? item.pubDate),
+            searchReason: request.reason,
+            matchedQuery: request.query,
           };
         })
         .filter(item => item.title && item.url);

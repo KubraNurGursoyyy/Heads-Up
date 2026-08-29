@@ -1,13 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api';
-import { Button, colors, Divider, Field, fontFamily, SectionLabel } from '../ui';
+import { Button, colors, Divider, Field, fontFamily, fontFamilyMedium, SectionLabel } from '../ui';
 import AppHeader from '../components/AppHeader';
 import SoftProgressBar from '../components/SoftProgressBar';
 import CategoryPickerModal from '../components/CategoryPickerModal';
-import type { NotificationMode, WatchCategory, WatchSuggestion } from '../types';
+import type {
+  NotificationMode,
+  WatchCategory,
+  WatchMatchMode,
+  WatchSuggestion,
+} from '../types';
 import { loadSettings } from '../settings';
 import {
+  buildIntersectionPrompt,
+  canSaveIntersection,
   effectiveCategory,
   normalizeInput,
   shouldOfferCorrection,
@@ -24,7 +31,10 @@ const modes: Array<[NotificationMode, string, string]> = [
 ];
 
 export default function AddWatchScreen({ onAdded }: Props) {
+  const [matchMode, setMatchMode] = useState<WatchMatchMode>('SINGLE');
   const [prompt, setPrompt] = useState('');
+  const [intersectionLeft, setIntersectionLeft] = useState('');
+  const [intersectionRight, setIntersectionRight] = useState('');
   const [mode, setMode] = useState<NotificationMode>('IMPORTANT_ONLY');
   const [busy, setBusy] = useState(false);
   const [suggestionBusy, setSuggestionBusy] = useState(false);
@@ -35,6 +45,13 @@ export default function AddWatchScreen({ onAdded }: Props) {
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
+
+  const intersectionPrompt = useMemo(
+    () => buildIntersectionPrompt(intersectionLeft, intersectionRight),
+    [intersectionLeft, intersectionRight],
+  );
+
+  const analysisInput = matchMode === 'INTERSECTION' ? intersectionPrompt : normalizeInput(prompt);
 
   useEffect(() => {
     void loadSettings().then(settings => {
@@ -48,10 +65,9 @@ export default function AddWatchScreen({ onAdded }: Props) {
   }, []);
 
   useEffect(() => {
-    const cleanPrompt = normalizeInput(prompt);
     const id = ++requestId.current;
 
-    if (!suggestionsEnabled || !shouldRequestSuggestion(cleanPrompt)) {
+    if (!suggestionsEnabled || !shouldRequestSuggestion(analysisInput)) {
       setSuggestion(null);
       setSuggestionBusy(false);
       return;
@@ -62,7 +78,7 @@ export default function AddWatchScreen({ onAdded }: Props) {
     const timer = setTimeout(() => {
       void api<WatchSuggestion>('/watches/suggest', {
         method: 'POST',
-        body: JSON.stringify({ prompt: cleanPrompt }),
+        body: JSON.stringify({ prompt: analysisInput }),
       })
         .then(result => {
           if (requestId.current !== id) return;
@@ -78,13 +94,19 @@ export default function AddWatchScreen({ onAdded }: Props) {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [prompt, suggestionsEnabled]);
+  }, [analysisInput, suggestionsEnabled]);
 
   const selectedCategory = effectiveCategory(manualCategory, suggestion?.category);
+  const canSave = matchMode === 'INTERSECTION'
+    ? canSaveIntersection(intersectionLeft, intersectionRight)
+    : normalizeInput(prompt).length >= 3;
 
   async function save() {
-    const cleanPrompt = normalizeInput(prompt);
-    if (cleanPrompt.length < 3) return;
+    if (!canSave) return;
+
+    const cleanPrompt = matchMode === 'INTERSECTION'
+      ? intersectionPrompt
+      : normalizeInput(prompt);
 
     try {
       setBusy(true);
@@ -95,12 +117,19 @@ export default function AddWatchScreen({ onAdded }: Props) {
         body: JSON.stringify({
           prompt: cleanPrompt,
           notificationMode: mode,
-          topicHint: suggestion?.topic,
+          topicHint: matchMode === 'SINGLE' ? suggestion?.topic : undefined,
           categoryHint: selectedCategory ?? undefined,
+          matchMode,
+          intersectionTerms:
+            matchMode === 'INTERSECTION'
+              ? [normalizeInput(intersectionLeft), normalizeInput(intersectionRight)]
+              : undefined,
         }),
       });
 
       setPrompt('');
+      setIntersectionLeft('');
+      setIntersectionRight('');
       setSuggestion(null);
       setManualCategory(null);
       onAdded();
@@ -111,13 +140,23 @@ export default function AddWatchScreen({ onAdded }: Props) {
     }
   }
 
+  function changeMatchMode(next: WatchMatchMode) {
+    setMatchMode(next);
+    setSuggestion(null);
+    setManualCategory(null);
+    setError(null);
+  }
+
   function useSuggestion() {
-    if (!suggestion) return;
+    if (!suggestion || matchMode !== 'SINGLE') return;
     setPrompt(suggestion.correctedPrompt);
   }
 
   const showCorrection = Boolean(
-    suggestion && suggestion.changed && shouldOfferCorrection(prompt, suggestion.correctedPrompt),
+    matchMode === 'SINGLE' &&
+      suggestion &&
+      suggestion.changed &&
+      shouldOfferCorrection(prompt, suggestion.correctedPrompt),
   );
 
   return (
@@ -129,37 +168,111 @@ export default function AddWatchScreen({ onAdded }: Props) {
       >
         <AppHeader
           title="Yeni takip"
-          subtitle="Ne öğrenmek istediğini yaz. HeadsUp konuyu yorumlar, kategoriler ve arka planda takip eder."
+          subtitle="Tek bir konuyu veya iki konunun kesişimini izle. Yazım, aksan ve büyük/küçük harf farkları eşleşmeyi bozmaz."
           kicker="HEADSUP / CREATE WATCH"
         />
 
-        <SectionLabel>Takip isteği</SectionLabel>
+        <SectionLabel>Takip türü</SectionLabel>
+        <View style={styles.modeSwitch}>
+          <Pressable
+            onPress={() => changeMatchMode('SINGLE')}
+            style={[styles.modeSwitchItem, matchMode === 'SINGLE' && styles.modeSwitchItemActive]}
+          >
+            <Text style={[styles.modeSwitchText, matchMode === 'SINGLE' && styles.modeSwitchTextActive]}>
+              Tek konu
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => changeMatchMode('INTERSECTION')}
+            style={[styles.modeSwitchItem, matchMode === 'INTERSECTION' && styles.modeSwitchItemActive]}
+          >
+            <Text style={[styles.modeSwitchText, matchMode === 'INTERSECTION' && styles.modeSwitchTextActive]}>
+              İki konunun kesişimi
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.sectionSpacer} />
+        <SectionLabel>{matchMode === 'INTERSECTION' ? 'Kesişim konuları' : 'Takip isteği'}</SectionLabel>
+
         <View style={styles.promptCard}>
           <View style={styles.promptHeader}>
             <View style={styles.promptIndex}>
               <Text style={styles.promptIndexText}>01</Text>
             </View>
             <View style={styles.promptHeaderText}>
-              <Text style={styles.promptTitle}>Neyi takip etmemi istiyorsun?</Text>
-              <Text style={styles.example}>Örn. “GTA 6 PC çıkış tarihi belli olduğunda haber ver.”</Text>
+              <Text style={styles.promptTitle}>
+                {matchMode === 'INTERSECTION'
+                  ? 'Hangi iki konunun kesişimini arayalım?'
+                  : 'Neyi takip etmemi istiyorsun?'}
+              </Text>
+              <Text style={styles.example}>
+                {matchMode === 'INTERSECTION'
+                  ? 'Örn. Neon Genesis Evangelion × Yōko Taro'
+                  : 'Örn. “GTA 6 PC çıkış tarihi belli olduğunda haber ver.”'}
+              </Text>
             </View>
           </View>
 
           <Divider />
 
-          <Field
-            multiline
-            value={prompt}
-            onChangeText={value => {
-              setPrompt(value);
-              setError(null);
-            }}
-            placeholder="Takip edilecek konuyu doğal bir cümleyle yaz..."
-            autoCapitalize="sentences"
-            autoCorrect
-            spellCheck
-            style={styles.field}
-          />
+          {matchMode === 'INTERSECTION' ? (
+            <View style={styles.intersectionFields}>
+              <View>
+                <Text style={styles.fieldLabel}>KONU 1</Text>
+                <Field
+                  value={intersectionLeft}
+                  onChangeText={value => {
+                    setIntersectionLeft(value);
+                    setError(null);
+                  }}
+                  placeholder="Neon Genesis Evangelion"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  style={styles.singleLineField}
+                />
+              </View>
+
+              <View style={styles.intersectionConnector}>
+                <View style={styles.connectorLine} />
+                <Text style={styles.connectorText}>×</Text>
+                <View style={styles.connectorLine} />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>KONU 2</Text>
+                <Field
+                  value={intersectionRight}
+                  onChangeText={value => {
+                    setIntersectionRight(value);
+                    setError(null);
+                  }}
+                  placeholder="Yōko Taro"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  style={styles.singleLineField}
+                />
+              </View>
+
+              <Text style={styles.intersectionHint}>
+                “Yōko Taro” ile “Yoko Taro” aynı kabul edilir. Sonuç “Evangelion” ve “Yoko Taro” gibi güçlü eşleşmeler içeriyorsa da kesişim olarak değerlendirilebilir.
+              </Text>
+            </View>
+          ) : (
+            <Field
+              multiline
+              value={prompt}
+              onChangeText={value => {
+                setPrompt(value);
+                setError(null);
+              }}
+              placeholder="Takip edilecek konuyu doğal bir cümleyle yaz..."
+              autoCapitalize="sentences"
+              autoCorrect
+              spellCheck
+              style={styles.field}
+            />
+          )}
 
           <View style={styles.analysisPanel}>
             <View style={styles.analysisTop}>
@@ -207,7 +320,7 @@ export default function AddWatchScreen({ onAdded }: Props) {
         <View style={styles.sectionSpacer} />
         <SectionLabel>Bildirim tercihi</SectionLabel>
         <View style={styles.modeList}>
-          {modes.map(([value, label, tag], index) => {
+          {modes.map(([value, label, tag]) => {
             const selected = mode === value;
             return (
               <Pressable
@@ -238,7 +351,7 @@ export default function AddWatchScreen({ onAdded }: Props) {
         <Button
           title={busy ? 'Takip kaydediliyor...' : 'Takibi başlat'}
           onPress={save}
-          disabled={busy || normalizeInput(prompt).length < 3}
+          disabled={busy || !canSave}
           style={styles.button}
         />
 
@@ -266,6 +379,37 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 34,
   },
+  modeSwitch: {
+    marginTop: 9,
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(236,217,167,0.36)',
+    backgroundColor: 'rgba(77,8,54,0.72)',
+    gap: 4,
+  },
+  modeSwitchItem: {
+    flex: 1,
+    minHeight: 42,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  modeSwitchItemActive: {
+    backgroundColor: colors.surface,
+    borderColor: colors.gold,
+  },
+  modeSwitchText: {
+    fontFamily: fontFamilyMedium,
+    color: '#E1BCD0',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  modeSwitchTextActive: { color: colors.ink },
   promptCard: {
     marginTop: 9,
     padding: 18,
@@ -279,11 +423,7 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 3,
   },
-  promptHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
+  promptHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   promptIndex: {
     width: 34,
     height: 34,
@@ -301,241 +441,111 @@ const styles = StyleSheet.create({
   },
   promptHeaderText: { flex: 1 },
   promptTitle: {
-    fontFamily,
+    fontFamily: fontFamilyMedium,
     color: colors.ink,
     fontSize: 17,
     fontWeight: '800',
-    letterSpacing: -0.35,
+    lineHeight: 22,
   },
-  example: {
-    fontFamily,
-    color: colors.inkSoft,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  field: {
-    width: '100%',
-    minHeight: 126,
-    textAlignVertical: 'top',
-    backgroundColor: colors.surface,
-  },
-  analysisPanel: {
-    marginTop: 13,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 13,
-    backgroundColor: colors.surfaceMuted,
-    padding: 13,
-  },
-  analysisTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  analysisLabel: {
-    fontFamily,
+  example: { fontFamily, color: colors.inkSoft, fontSize: 11, lineHeight: 17, marginTop: 4 },
+  field: { width: '100%', minHeight: 120, textAlignVertical: 'top' },
+  singleLineField: { width: '100%', minHeight: 52 },
+  fieldLabel: {
+    fontFamily: fontFamilyMedium,
     color: colors.wine,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.3,
-  },
-  analysisMuted: {
-    fontFamily,
-    color: colors.inkMuted,
-    fontSize: 10,
-  },
-  analysisDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 10,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  categoryCopy: { flex: 1 },
-  categoryCaption: {
-    fontFamily,
-    color: colors.inkMuted,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  categoryValue: {
-    fontFamily,
-    color: colors.ink,
-    fontSize: 14,
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  manualBadge: {
-    fontFamily,
-    color: colors.magenta,
     fontSize: 8,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 1.25,
+    marginBottom: 6,
+  },
+  intersectionFields: { gap: 8 },
+  intersectionConnector: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
+  connectorLine: { flex: 1, height: 1, backgroundColor: colors.borderStrong },
+  connectorText: {
+    fontFamily: fontFamilyMedium,
+    color: colors.goldDark,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  intersectionHint: {
+    fontFamily,
+    color: colors.inkSoft,
+    fontSize: 10,
+    lineHeight: 16,
     marginTop: 4,
   },
+  analysisPanel: {
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+  },
+  analysisTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  analysisLabel: {
+    fontFamily: fontFamilyMedium,
+    color: colors.wine,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  analysisMuted: { fontFamily, color: colors.inkMuted, fontSize: 9 },
+  analysisDivider: { height: 1, backgroundColor: colors.border, marginVertical: 9 },
+  categoryRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  categoryCopy: { flex: 1 },
+  categoryCaption: { fontFamily, color: colors.inkMuted, fontSize: 9 },
+  categoryValue: { fontFamily: fontFamilyMedium, color: colors.ink, fontSize: 13, fontWeight: '800', marginTop: 2 },
+  manualBadge: { fontFamily, color: colors.magenta, fontSize: 7, fontWeight: '800', letterSpacing: 1, marginTop: 4 },
   categoryButton: {
     minHeight: 36,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.magenta,
-    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.goldDark,
+    borderRadius: 8,
   },
-  categoryButtonText: {
-    fontFamily,
-    color: colors.magenta,
-    fontSize: 11,
-    fontWeight: '800',
-  },
+  categoryButtonText: { fontFamily: fontFamilyMedium, color: colors.wine, fontSize: 9, fontWeight: '800' },
   suggestionCard: {
     marginTop: 12,
-    padding: 16,
-    borderRadius: 15,
+    padding: 15,
+    borderRadius: 12,
     backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
-  suggestionGoldLine: {
-    width: 38,
-    height: 2,
-    backgroundColor: colors.gold,
-    marginBottom: 10,
-  },
-  suggestionEyebrow: {
-    fontFamily,
-    color: colors.magenta,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    marginBottom: 6,
-  },
-  suggestionText: {
-    fontFamily,
-    color: colors.ink,
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-  suggestionActions: {
-    marginTop: 13,
-    flexDirection: 'row',
-    gap: 9,
-  },
-  useSuggestionButton: {
-    minHeight: 39,
-    paddingHorizontal: 13,
-    borderRadius: 10,
-    backgroundColor: colors.magenta,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  useSuggestionText: {
-    fontFamily,
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  ignoreButton: {
-    minHeight: 39,
-    paddingHorizontal: 13,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ignoreText: {
-    fontFamily,
-    color: colors.inkSoft,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  sectionSpacer: { height: 22 },
-  modeList: {
-    marginTop: 9,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
+  suggestionGoldLine: { width: 42, height: 2, backgroundColor: colors.gold, marginBottom: 9 },
+  suggestionEyebrow: { fontFamily: fontFamilyMedium, color: colors.wine, fontSize: 8, fontWeight: '800', letterSpacing: 1.2 },
+  suggestionText: { fontFamily, color: colors.ink, fontSize: 13, fontWeight: '700', lineHeight: 19, marginTop: 5 },
+  suggestionActions: { marginTop: 12, flexDirection: 'row', gap: 8 },
+  useSuggestionButton: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: colors.wine },
+  useSuggestionText: { fontFamily: fontFamilyMedium, color: colors.lightText, fontSize: 9, fontWeight: '800' },
+  ignoreButton: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: colors.borderStrong },
+  ignoreText: { fontFamily: fontFamilyMedium, color: colors.inkSoft, fontSize: 9, fontWeight: '800' },
+  sectionSpacer: { height: 18 },
+  modeList: { marginTop: 9, gap: 8 },
   modeCard: {
-    minHeight: 58,
+    minHeight: 55,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modeCardSelected: { backgroundColor: colors.surfaceStrong },
-  radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 11,
+    borderColor: colors.border,
   },
+  modeCardSelected: { borderColor: colors.goldDark, backgroundColor: colors.surfaceStrong },
+  radio: { width: 17, height: 17, borderRadius: 9, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: colors.magenta },
-  radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.magenta,
-  },
-  modeCopy: { flex: 1 },
-  modeText: {
-    fontFamily,
-    color: colors.inkSoft,
-    fontSize: 12,
-    fontWeight: '700',
-  },
+  radioDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.magenta },
+  modeCopy: { flex: 1, marginLeft: 10 },
+  modeText: { fontFamily: fontFamilyMedium, color: colors.inkSoft, fontSize: 11, fontWeight: '700' },
   modeTextSelected: { color: colors.ink, fontWeight: '800' },
-  modeTag: {
-    fontFamily,
-    color: colors.inkMuted,
-    fontSize: 9,
-    marginTop: 2,
-  },
-  modeLine: {
-    width: 18,
-    height: 2,
-    backgroundColor: colors.goldSoft,
-  },
-  modeLineSelected: {
-    width: 32,
-    backgroundColor: colors.magenta,
-  },
-  errorBox: {
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: '#D990AB',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 12,
-    padding: 12,
-  },
-  errorTitle: {
-    fontFamily,
-    color: colors.danger,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  errorText: {
-    fontFamily,
-    color: colors.inkSoft,
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 3,
-  },
-  button: { marginTop: 18 },
-  saveProgress: { marginTop: 11 },
+  modeTag: { fontFamily, color: colors.inkMuted, fontSize: 8, marginTop: 2 },
+  modeLine: { width: 22, height: 2, backgroundColor: colors.border },
+  modeLineSelected: { backgroundColor: colors.goldDark },
+  errorBox: { marginTop: 12, padding: 12, borderRadius: 9, backgroundColor: '#E8C1D3', borderWidth: 1, borderColor: '#B45D83' },
+  errorTitle: { fontFamily: fontFamilyMedium, color: colors.danger, fontSize: 10, fontWeight: '800' },
+  errorText: { fontFamily, color: colors.danger, fontSize: 10, lineHeight: 15, marginTop: 3 },
+  button: { marginTop: 16 },
+  saveProgress: { marginTop: 10 },
 });
