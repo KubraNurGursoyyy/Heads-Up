@@ -4,6 +4,7 @@ module.exports = {
   expo: {
     name: 'HeadsUp',
     slug: 'headsup',
+    owner: 'kubranurgursoyys-team',
     version: '0.1.0',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
