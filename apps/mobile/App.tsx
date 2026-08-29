@@ -130,7 +130,7 @@ export default function App() {
 
             <View style={ui.card}>
               <Text style={ui.h1}>
-                Minik bir sorun oldu 🌸
+                Minik bir sorun oldu 
               </Text>
 
               <Text
@@ -153,7 +153,7 @@ export default function App() {
                   void bootstrap()
                 }
               >
-                Tekrar dene ♡
+                Tekrar dene
               </Text>
             </View>
           </View>

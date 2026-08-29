@@ -1,13 +1,9 @@
+import { normalizeApiBaseUrl } from './utils/watch-ui';
 import { Platform } from 'react-native';
 
-const RAW_BASE = (
-  process.env.EXPO_PUBLIC_API_URL ||
-  'http://127.0.0.1:3000'
-).replace(/\/+$/, '');
-
-// Backend controller routes are rooted at /auth, /feed, /watches, etc.
-// Older local configs used an extra /api suffix, so tolerate it here.
-const BASE = RAW_BASE.replace(/\/api$/i, '');
+const BASE = normalizeApiBaseUrl(
+  process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000',
+);
 
 const SINGLE_USER_KEY =
   process.env.EXPO_PUBLIC_HEADSUP_SINGLE_USER_KEY || '';

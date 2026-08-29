@@ -12,7 +12,7 @@ import { Injectable, Logger } from '@nestjs/common'; import { createHash } from 
       const eventKey=this.normalizeEventKey(analysis.eventKey,analysis.eventType,article.title);
       await this.p.watchArticle.create({data:{watchId,articleId:article.id,relevanceScore:analysis.relevanceScore,importanceScore:analysis.importanceScore,isNewInformation:analysis.isNewInformation,eventType:analysis.eventType,eventKey,summary:analysis.summary}}); attached++;
       if(this.shouldPush(watch,analysis.importanceScore,analysis.isNewInformation,analysis.eventType)){
-        await this.notifications.send(watch.userId,watch.id,article.id,eventKey,article.canonicalUrl,`🔔 ${watch.topic}`,analysis.summary||article.title); pushed++;
+        await this.notifications.send(watch.userId,watch.id,article.id,eventKey,article.canonicalUrl,` ${watch.topic}`,analysis.summary||article.title); pushed++;
       }
     }
     await this.p.watch.update({where:{id:watch.id},data:{lastCheckedAt:new Date()}}); this.logger.log(`${watch.topic}: discovered=${discovered.length} attached=${attached} pushed=${pushed}`); return {discovered:discovered.length,attached,pushed};

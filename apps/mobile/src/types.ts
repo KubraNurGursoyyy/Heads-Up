@@ -4,7 +4,20 @@ export type NotificationMode =
   | 'SELECTED_EVENTS'
   | 'OFF';
 
-export type Category = 'GAME' | 'BOOK' | 'MOVIE_TV' | 'TECHNOLOGY' | 'GENERAL';
+export type Category = string;
+
+export type WatchCategory = {
+  name: string;
+  count: number;
+};
+
+export type WatchSuggestion = {
+  originalPrompt: string;
+  correctedPrompt: string;
+  changed: boolean;
+  topic: string;
+  category: string;
+};
 
 export type Watch = {
   id: string;

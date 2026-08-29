@@ -19,10 +19,14 @@ const required = [
   'apps/api/prisma/schema.prisma',
   'apps/api/src/main.ts',
   'apps/api/src/worker.ts',
+  'apps/api/src/common/text-normalization.ts',
+  'apps/api/src/common/text-normalization.test.mjs',
   'apps/mobile/package.json',
   'apps/mobile/.env.example',
   'apps/mobile/App.tsx',
   'apps/mobile/app.config.js',
+  'apps/mobile/src/utils/watch-ui.ts',
+  'apps/mobile/src/utils/watch-ui.test.mjs',
 ];
 
 for (const file of required) {
@@ -66,6 +70,15 @@ if (!authController.includes("@Post('bootstrap')")) {
   errors.push('Single-user auth route POST /auth/bootstrap is missing.');
 }
 
+
+const watchesController = read('apps/api/src/watches/watches.controller.ts');
+if (!watchesController.includes("@Post('suggest')")) {
+  errors.push('POST /watches/suggest is missing.');
+}
+if (!watchesController.includes("@Get('categories')")) {
+  errors.push('GET /watches/categories is missing.');
+}
+
 const authModule = read('apps/api/src/auth/auth.module.ts');
 if (!authModule.includes('controllers: [AuthController]')) {
   errors.push('AuthController is not registered in AuthModule.');
@@ -93,6 +106,14 @@ if (
 }
 
 const prismaSchema = read('apps/api/prisma/schema.prisma');
+
+if (/enum\s+Category\s*\{/.test(prismaSchema)) {
+  errors.push('Prisma Category enum is still fixed; categories must be dynamic text.');
+}
+if (!/category\s+String/.test(prismaSchema)) {
+  errors.push('Watch.category must be a String for dynamic categories.');
+}
+
 const models = [
   ...prismaSchema.matchAll(/^model\s+(\w+)\s*\{/gm),
 ].map(match => match[1]);
@@ -105,6 +126,11 @@ const migrationSql = fs
   .filter(file => fs.existsSync(file))
   .map(file => fs.readFileSync(file, 'utf8'))
   .join('\n');
+
+
+if (!/ALTER TABLE\s+"Watch"[\s\S]*ALTER COLUMN\s+"category"\s+TYPE TEXT/.test(migrationSql)) {
+  errors.push('Dynamic category migration is missing.');
+}
 
 const migratedTables = new Set(
   [...migrationSql.matchAll(/CREATE TABLE\s+"([^"]+)"/g)].map(

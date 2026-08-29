@@ -197,7 +197,7 @@ export default function WatchesScreen() {
               </Text>
 
               <Text style={styles.notification}>
-                🔔{' '}
+                {' '}
                 {modeLabel(
                   item.notificationMode,
                 )}
@@ -252,7 +252,7 @@ export default function WatchesScreen() {
                     )
                       .then(() =>
                         Alert.alert(
-                          'Tamam ♡',
+                          'Tamam ',
                           'Tarama kuyruğa alındı.',
                         ),
                       )

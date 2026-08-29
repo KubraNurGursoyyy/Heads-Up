@@ -25,28 +25,39 @@ export default function StartupSplash({
     new Animated.Value(0.98),
   ).current;
 
+  const onDoneRef = useRef(onDone);
+
   useEffect(() => {
-    Animated.parallel([
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
+  useEffect(() => {
+    const animation = Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 160,
+        duration: 180,
         useNativeDriver: true,
       }),
 
       Animated.timing(scale, {
         toValue: 1,
-        duration: 350,
+        duration: 450,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+
+    animation.start();
 
     const timer = setTimeout(() => {
-      onDone();
+      onDoneRef.current();
     }, 500);
 
-    return () => clearTimeout(timer);
-  }, [opacity, scale, onDone]);
+    return () => {
+      clearTimeout(timer);
+      animation.stop();
+    };
+  }, [opacity, scale]);
 
   return (
     <View style={styles.root}>
@@ -54,7 +65,7 @@ export default function StartupSplash({
         source={require('../../assets/splash.png')}
         resizeMode="contain"
         style={[
-          styles.image,
+          StyleSheet.absoluteFill,
           {
             opacity,
             transform: [{ scale }],
@@ -69,12 +80,5 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#F5A7C2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  image: {
-    width: '100%',
-    height: '100%',
   },
 });

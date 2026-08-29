@@ -1,13 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Article, Category, Watch } from '@prisma/client';
+import { Article, Watch } from '@prisma/client';
+import {
+  applyCommonTurkishCorrections,
+  inferFallbackCategory,
+  normalizeCategoryName,
+  normalizeWhitespace,
+} from '../common/text-normalization';
 
 export type WatchInterpretation = {
   topic: string;
   intent: string;
-  category: Category;
+  category: string;
   aliases: string[];
   searchQueries: string[];
   notifyEvents: string[];
+};
+
+export type WatchSuggestion = {
+  originalPrompt: string;
+  correctedPrompt: string;
+  changed: boolean;
+  topic: string;
+  category: string;
 };
 
 export type ArticleAnalysis = {
@@ -32,20 +46,80 @@ type GeminiGenerateResponse = {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private geminiUnavailableUntil = 0;
+  private readonly suggestionCache = new Map<string, { expiresAt: number; value: WatchSuggestion }>();
+
+  async suggestWatch(prompt: string): Promise<WatchSuggestion> {
+    const originalPrompt = normalizeWhitespace(prompt);
+    const cacheKey = originalPrompt.toLocaleLowerCase('tr-TR');
+    const cached = this.suggestionCache.get(cacheKey);
+
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+    let suggestion: WatchSuggestion;
+
+    if (!this.canUseGemini()) {
+      suggestion = this.fallbackSuggest(originalPrompt);
+    } else {
+      try {
+        const result = await this.callStructured<{
+          correctedPrompt: string;
+          topic: string;
+          category: string;
+        }>(
+          `Kullanıcının Türkçe takip isteğini yalnızca yazım, imla, eksik Türkçe karakter ve özel isim büyük/küçük harfleri açısından düzelt. Anlamı, isteği veya kapsamı değiştirme. correctedPrompt doğal ve kısa olsun. topic takip edilen kanonik konu adı olsun. category üst seviye, kısa ve Türkçe bir kategori etiketi olsun. Mevcut bir kategori uygunsa Oyun, Kitap, Film & Dizi, Teknoloji, Müzik, Spor, Bilim, Finans & Ekonomi, Seyahat, Moda, Otomotiv gibi etiketleri kullan; gerçekten farklı bir alan ise 1-3 kelimelik yeni bir kategori üret.`,
+          originalPrompt,
+          {
+            type: 'object',
+            properties: {
+              correctedPrompt: { type: 'string', minLength: 3, maxLength: 500 },
+              topic: { type: 'string', minLength: 1, maxLength: 120 },
+              category: { type: 'string', minLength: 1, maxLength: 40 },
+            },
+            required: ['correctedPrompt', 'topic', 'category'],
+          },
+        );
+
+        const correctedPrompt = normalizeWhitespace(result.correctedPrompt) || originalPrompt;
+        suggestion = {
+          originalPrompt,
+          correctedPrompt,
+          changed: correctedPrompt !== originalPrompt,
+          topic: normalizeWhitespace(result.topic).slice(0, 120) || originalPrompt.slice(0, 120),
+          category: normalizeCategoryName(result.category),
+        };
+      } catch (error) {
+        this.logger.warn(`Gemini watch suggestion unavailable; local fallback used: ${String(error)}`);
+        suggestion = this.fallbackSuggest(originalPrompt);
+      }
+    }
+
+    this.suggestionCache.set(cacheKey, {
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      value: suggestion,
+    });
+
+    if (this.suggestionCache.size > 100) {
+      const first = this.suggestionCache.keys().next().value as string | undefined;
+      if (first) this.suggestionCache.delete(first);
+    }
+
+    return suggestion;
+  }
 
   async interpretWatch(prompt: string): Promise<WatchInterpretation> {
-    if (!this.canUseGemini()) return this.fallbackInterpret(prompt);
+    const cleanPrompt = normalizeWhitespace(prompt);
+    if (!this.canUseGemini()) return this.fallbackInterpret(cleanPrompt);
 
     try {
-      return await this.callStructured<WatchInterpretation>(
-        `Kullanıcının takip isteğini yapılandır. Kullanıcı Türkçe yazabilir. topic kanonik konu adı, intent neyi beklediğinin kısa açıklaması olsun. category yalnız GAME, BOOK, MOVIE_TV, TECHNOLOGY, GENERAL. aliases en çok 8 ad/alternatif, searchQueries en çok 5 etkili web haber araması, notifyEvents en çok 8 kısa snake_case olay türü üret (ör. release_date, delay, availability).`,
-        prompt,
+      const result = await this.callStructured<WatchInterpretation>(
+        `Kullanıcının takip isteğini yapılandır. Kullanıcı Türkçe yazabilir ve yazım hataları yapabilir. topic kanonik konu adı, intent neyi beklediğinin kısa açıklaması olsun. category kısa, üst seviye ve Türkçe bir kategori etiketi olsun. Mevcut kategori uygunsa Oyun, Kitap, Film & Dizi, Teknoloji, Müzik, Spor, Bilim, Finans & Ekonomi, Seyahat, Moda, Otomotiv gibi etiketleri yeniden kullan; konu farklı bir alandaysa 1-3 kelimelik yeni kategori üret. aliases en çok 8 ad/alternatif, searchQueries en çok 5 etkili web haber araması, notifyEvents en çok 8 kısa snake_case olay türü üret (ör. release_date, delay, availability). Aramalarda büyük/küçük harfe bağımlı olma.`,
+        cleanPrompt,
         {
           type: 'object',
           properties: {
             topic: { type: 'string' },
             intent: { type: 'string' },
-            category: { type: 'string', enum: ['GAME', 'BOOK', 'MOVIE_TV', 'TECHNOLOGY', 'GENERAL'] },
+            category: { type: 'string', minLength: 1, maxLength: 40 },
             aliases: { type: 'array', items: { type: 'string' } },
             searchQueries: { type: 'array', items: { type: 'string' } },
             notifyEvents: { type: 'array', items: { type: 'string' } },
@@ -53,9 +127,19 @@ export class AiService {
           required: ['topic', 'intent', 'category', 'aliases', 'searchQueries', 'notifyEvents'],
         },
       );
+
+      return {
+        ...result,
+        topic: normalizeWhitespace(result.topic).slice(0, 120),
+        intent: normalizeWhitespace(result.intent),
+        category: normalizeCategoryName(result.category),
+        aliases: result.aliases.map(normalizeWhitespace).filter(Boolean).slice(0, 8),
+        searchQueries: result.searchQueries.map(normalizeWhitespace).filter(Boolean).slice(0, 5),
+        notifyEvents: result.notifyEvents.map(normalizeWhitespace).filter(Boolean).slice(0, 8),
+      };
     } catch (error) {
       this.logger.warn(`Gemini watch interpretation unavailable; local fallback used: ${String(error)}`);
-      return this.fallbackInterpret(prompt);
+      return this.fallbackInterpret(cleanPrompt);
     }
   }
 
@@ -82,7 +166,7 @@ export class AiService {
 
     try {
       return await this.callStructured<ArticleAnalysis>(
-        `Bir haberin kullanıcının takibiyle ilişkisini değerlendir. relevanceScore ve importanceScore 0..1 olsun. isNewInformation, başlık/açıklamanın takip açısından gerçek bir yeni gelişme iddia edip etmediğini göstersin. eventType kısa snake_case olay türü. eventKey aynı gerçek dünya gelişmesini farklı siteler anlatsa da aynı olacak kısa ve kararlı bir kimlik olsun (ör. pc_release_date_2027_announced); farklı bir gelişmeyse farklı olsun. summary en fazla 2 kısa Türkçe cümle. Sadece başlık/açıklamada desteklenen bilgiye dayan; uydurma yapma.`,
+        `Bir haberin kullanıcının takibiyle ilişkisini değerlendir. Büyük/küçük harf farklılıklarını önemseme. relevanceScore ve importanceScore 0..1 olsun. isNewInformation, başlık/açıklamanın takip açısından gerçek bir yeni gelişme iddia edip etmediğini göstersin. eventType kısa snake_case olay türü. eventKey aynı gerçek dünya gelişmesini farklı siteler anlatsa da aynı olacak kısa ve kararlı bir kimlik olsun (ör. pc_release_date_2027_announced); farklı bir gelişmeyse farklı olsun. summary en fazla 2 kısa Türkçe cümle. Sadece başlık/açıklamada desteklenen bilgiye dayan; uydurma yapma.`,
         input,
         {
           type: 'object',
@@ -157,14 +241,24 @@ export class AiService {
     return JSON.parse(text) as T;
   }
 
+  private fallbackSuggest(prompt: string): WatchSuggestion {
+    const originalPrompt = normalizeWhitespace(prompt);
+    const correctedPrompt = applyCommonTurkishCorrections(originalPrompt);
+    const interpreted = this.fallbackInterpret(correctedPrompt);
+
+    return {
+      originalPrompt,
+      correctedPrompt,
+      changed: correctedPrompt !== originalPrompt,
+      topic: interpreted.topic,
+      category: interpreted.category,
+    };
+  }
+
   private fallbackInterpret(prompt: string): WatchInterpretation {
-    const p = prompt.trim();
-    const lower = p.toLocaleLowerCase('tr');
-    let category: Category = 'GENERAL';
-    if (/oyun|game|steam|playstation|xbox|pc\b/.test(lower)) category = 'GAME';
-    else if (/kitap|roman|baskı|yayınevi|yazar/.test(lower)) category = 'BOOK';
-    else if (/film|dizi|sezon|vizyon|sinema/.test(lower)) category = 'MOVIE_TV';
-    else if (/telefon|işlemci|yazılım|sürüm|android|iphone|teknoloji/.test(lower)) category = 'TECHNOLOGY';
+    const p = normalizeWhitespace(prompt);
+    const lower = p.toLocaleLowerCase('tr-TR');
+    const category = inferFallbackCategory(p);
 
     const topic = p
       .replace(/\b(takip et|haber ver|bildir|çıktığında|çıkınca|olursa)\b/gi, '')
@@ -176,8 +270,8 @@ export class AiService {
       topic,
       intent: p,
       category,
-      aliases: [topic],
-      searchQueries: [p, topic],
+      aliases: [topic, topic.toLocaleLowerCase('tr-TR')].filter((value, index, all) => all.indexOf(value) === index),
+      searchQueries: [p, topic, lower].filter((value, index, all) => value && all.indexOf(value) === index).slice(0, 5),
       notifyEvents: ['announcement', 'release_date', 'release', 'delay', 'availability'],
     };
   }
@@ -186,10 +280,10 @@ export class AiService {
     watch: Watch,
     article: Pick<Article, 'title' | 'description' | 'sourceName' | 'publishedAt'>,
   ): ArticleAnalysis {
-    const hay = `${article.title} ${article.description ?? ''}`.toLocaleLowerCase('tr');
+    const hay = `${article.title} ${article.description ?? ''}`.toLocaleLowerCase('tr-TR');
     const tokens = [watch.topic, watch.intent, ...((watch.aliases as string[]) ?? [])]
       .join(' ')
-      .toLocaleLowerCase('tr')
+      .toLocaleLowerCase('tr-TR')
       .split(/[^\p{L}\p{N}]+/u)
       .filter(x => x.length >= 4);
     const unique = [...new Set(tokens)];
@@ -197,7 +291,7 @@ export class AiService {
     const relevanceScore = Math.min(
       1,
       hits / Math.max(2, Math.min(unique.length, 6)) +
-        (hay.includes(watch.topic.toLocaleLowerCase('tr')) ? 0.35 : 0),
+        (hay.includes(watch.topic.toLocaleLowerCase('tr-TR')) ? 0.35 : 0),
     );
     const importantWords = [
       'açıklandı',
@@ -217,7 +311,7 @@ export class AiService {
     const relevant = relevanceScore >= 0.35;
     const key =
       article.title
-        .toLocaleLowerCase('tr')
+        .toLocaleLowerCase('tr-TR')
         .replace(/[^\p{L}\p{N}]+/gu, ' ')
         .trim()
         .split(/\s+/)

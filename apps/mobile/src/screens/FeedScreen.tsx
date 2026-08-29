@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -14,127 +9,99 @@ import {
   Text,
   View,
 } from 'react-native';
-
 import { api } from '../api';
 import { Loading } from '../ui';
-
 import AppHeader from '../components/AppHeader';
 import FilterChip from '../components/FilterChip';
+import type { FeedItem, WatchCategory } from '../types';
 
-import type {
-  Category,
-  FeedItem,
-} from '../types';
-
-type FeedFilter =
-  | 'all'
-  | 'important'
-  | 'unread';
-
-const categories: Array<
-  [Category | 'ALL', string]
-> = [
-  ['ALL', 'Tümü'],
-  ['GAME', 'Oyun'],
-  ['BOOK', 'Kitap'],
-  ['MOVIE_TV', 'Film & Dizi'],
-  ['TECHNOLOGY', 'Teknoloji'],
-  ['GENERAL', 'Diğer'],
-];
+type FeedFilter = 'all' | 'important' | 'unread';
 
 export default function FeedScreen() {
   const [items, setItems] = useState<FeedItem[]>([]);
-  const [filter, setFilter] =
-    useState<FeedFilter>('all');
-
-  const [category, setCategory] =
-    useState<Category | 'ALL'>('ALL');
-
-  const [loading, setLoading] =
-    useState(true);
+  const [categories, setCategories] = useState<WatchCategory[]>([]);
+  const [filter, setFilter] = useState<FeedFilter>('all');
+  const [category, setCategory] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
 
-    if (filter !== 'all') {
-      params.set('filter', filter);
-    }
-
-    if (category !== 'ALL') {
-      params.set('category', category);
-    }
+    if (filter !== 'all') params.set('filter', filter);
+    if (category) params.set('category', category);
 
     const text = params.toString();
-
     return text ? `?${text}` : '';
   }, [filter, category]);
 
-  async function load() {
+  async function loadFeed() {
     setLoading(true);
 
     try {
-      setItems(
-        await api<FeedItem[]>(`/feed${query}`),
-      );
+      setItems(await api<FeedItem[]>(`/feed${query}`));
     } catch (error) {
-      Alert.alert(
-        'Haberler yüklenemedi',
-        (error as Error).message,
-      );
+      Alert.alert('Haberler yüklenemedi', (error as Error).message);
     } finally {
       setLoading(false);
     }
   }
 
+  async function loadCategories() {
+    try {
+      const result = await api<WatchCategory[]>('/watches/categories');
+      setCategories(result);
+
+      if (category && !result.some(item => item.name.toLocaleLowerCase('tr-TR') === category.toLocaleLowerCase('tr-TR'))) {
+        setCategory(null);
+      }
+    } catch {
+      // Feed çalışmaya devam etsin; kategori filtresi yardımcı bir özellik.
+    }
+  }
+
   useEffect(() => {
-    void load();
+    void loadCategories();
+  }, []);
+
+  useEffect(() => {
+    void loadFeed();
   }, [query]);
 
   return (
     <View style={styles.root}>
       <View style={styles.headerArea}>
         <AppHeader
-          title="Bugün neler oldu?"
-          subtitle="Takip ettiklerindeki gelişmeler"
+          title="Bugün neler var?"
+          subtitle="Takip ettiğin konulardaki yeni gelişmeler."
         />
 
-        <Text style={styles.sectionTitle}>
-          Kategoriler
-        </Text>
+        <Text style={styles.sectionTitle}>Kategoriler</Text>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chips}
         >
-          {categories.map(([value, label]) => (
+          <FilterChip
+            label="Tümü"
+            selected={category === null}
+            onPress={() => setCategory(null)}
+          />
+
+          {categories.map(item => (
             <FilterChip
-              key={value}
-              label={label}
-              selected={category === value}
-              onPress={() => setCategory(value)}
+              key={item.name}
+              label={item.name}
+              selected={category?.toLocaleLowerCase('tr-TR') === item.name.toLocaleLowerCase('tr-TR')}
+              onPress={() => setCategory(item.name)}
             />
           ))}
         </ScrollView>
 
         <View style={styles.filters}>
-          <FilterChip
-            label="Hepsi"
-            selected={filter === 'all'}
-            onPress={() => setFilter('all')}
-          />
-
-          <FilterChip
-            label="Önemli"
-            selected={filter === 'important'}
-            onPress={() => setFilter('important')}
-          />
-
-          <FilterChip
-            label="Yeni"
-            selected={filter === 'unread'}
-            onPress={() => setFilter('unread')}
-          />
+          <FilterChip label="Hepsi" selected={filter === 'all'} onPress={() => setFilter('all')} />
+          <FilterChip label="Önemli" selected={filter === 'important'} onPress={() => setFilter('important')} />
+          <FilterChip label="Yeni" selected={filter === 'unread'} onPress={() => setFilter('unread')} />
         </View>
       </View>
 
@@ -147,9 +114,7 @@ export default function FeedScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<EmptyFeed />}
-          renderItem={({ item }) => (
-            <FeedCard item={item} />
-          )}
+          renderItem={({ item }) => <FeedCard item={item} />}
         />
       )}
     </View>
@@ -164,10 +129,7 @@ function EmptyFeed() {
         <View style={styles.emptyMarkSmall} />
       </View>
 
-      <Text style={styles.emptyTitle}>
-        Şimdilik sessiz
-      </Text>
-
+      <Text style={styles.emptyTitle}>Şimdilik sessiz</Text>
       <Text style={styles.emptyText}>
         Takip ettiğin konularda yeni bir gelişme olduğunda burada göreceksin.
       </Text>
@@ -175,117 +137,55 @@ function EmptyFeed() {
   );
 }
 
-function FeedCard({
-  item,
-}: {
-  item: FeedItem;
-}) {
+function FeedCard({ item }: { item: FeedItem }) {
   async function open() {
     try {
-      await api(`/feed/${item.id}/read`, {
-        method: 'PATCH',
-      });
-    } catch {}
+      await api(`/feed/${item.id}/read`, { method: 'PATCH' });
+    } catch {
+      // Haberi açmayı engelleme.
+    }
 
-    await Linking.openURL(
-      item.article.canonicalUrl,
-    );
+    await Linking.openURL(item.article.canonicalUrl);
   }
 
   return (
     <Pressable
       onPress={open}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.cardTop}>
         <View style={styles.topic}>
-          <Text style={styles.topicText}>
-            {item.watch.topic}
-          </Text>
+          <Text style={styles.topicText}>{item.watch.topic}</Text>
         </View>
 
-        <View style={styles.score}>
-          <Text style={styles.scoreText}>
-            ✦{' '}
-            {Math.round(
-              item.importanceScore * 100,
-            )}
-          </Text>
-        </View>
+        <Text style={styles.categoryText}>{item.watch.category}</Text>
       </View>
 
-      <Text style={styles.articleTitle}>
-        {item.article.title}
-      </Text>
-
-      <Text style={styles.summary}>
-        {item.summary}
-      </Text>
+      <Text style={styles.articleTitle}>{item.article.title}</Text>
+      <Text style={styles.summary}>{item.summary}</Text>
 
       <View style={styles.footer}>
-        <Text style={styles.source}>
-          {item.article.sourceName || 'Kaynak'}
-        </Text>
-
-        <Text style={styles.open}>
-          Haberi aç →
-        </Text>
+        <Text style={styles.source}>{item.article.sourceName || 'Kaynak'}</Text>
+        <Text style={styles.importance}>Önem %{Math.round(item.importanceScore * 100)}</Text>
+        <Text style={styles.open}>Haberi aç</Text>
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-emptyMark: {
-  width: 54,
-  height: 54,
-
-  borderRadius: 27,
-
-  backgroundColor: '#FAE4EC',
-
-  alignItems: 'center',
-  justifyContent: 'center',
-
-  marginBottom: 4,
-},
-
-  emptyMarkLarge: {
-    width: 12,
-    height: 12,
-
-    borderRadius: 6,
-
-    backgroundColor: '#C76A8E',
-  },
-
-  emptyMarkSmall: {
-    width: 5,
-    height: 5,
-
-    borderRadius: 3,
-
-    backgroundColor: '#E2B3C5',
-
-    marginTop: 5,
-  },
+  root: { flex: 1 },
 
   headerArea: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 14,
   },
 
   sectionTitle: {
-    color: '#563749',
+    color: '#4F3543',
     fontWeight: '800',
-    fontSize: 14,
+    fontSize: 13,
   },
 
   chips: {
@@ -302,130 +202,146 @@ emptyMark: {
   },
 
   list: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingBottom: 30,
   },
 
   card: {
-    padding: 17,
-    marginBottom: 14,
-
-    borderRadius: 26,
-
-    backgroundColor: 'rgba(255,255,255,0.92)',
-
+    padding: 18,
+    marginBottom: 13,
+    borderRadius: 21,
+    backgroundColor: '#FFFCFD',
     borderWidth: 1,
-    borderColor: '#FFD2E4',
-
-    elevation: 3,
+    borderColor: '#F0D6E0',
+    shadowColor: '#6A4556',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 2,
   },
 
   cardPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.88,
+    transform: [{ scale: 0.99 }],
   },
 
   cardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 11,
   },
 
   topic: {
-    maxWidth: '72%',
-
+    flexShrink: 1,
     paddingHorizontal: 11,
     paddingVertical: 6,
-
     borderRadius: 999,
-
-    backgroundColor: '#FFE8F1',
+    backgroundColor: '#FAE4EC',
   },
 
   topicText: {
-    color: '#D9528B',
+    color: '#944A68',
     fontSize: 12,
     fontWeight: '800',
   },
 
-  score: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-
-    borderRadius: 999,
-
-    backgroundColor: '#FFE6A6',
-  },
-
-  scoreText: {
-    color: '#906A24',
-    fontSize: 12,
-    fontWeight: '800',
+  categoryText: {
+    color: '#A18491',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   articleTitle: {
-    color: '#563749',
+    color: '#4F3543',
     fontSize: 17,
-    fontWeight: '900',
+    fontWeight: '800',
     lineHeight: 23,
   },
 
   summary: {
-    color: '#936C80',
+    color: '#896B79',
     marginTop: 8,
     lineHeight: 20,
+    fontSize: 14,
   },
 
   footer: {
     marginTop: 14,
     paddingTop: 11,
-
     flexDirection: 'row',
-    justifyContent: 'space-between',
-
+    alignItems: 'center',
+    gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#FFE8F1',
+    borderTopColor: '#F5E5EB',
   },
 
   source: {
-    color: '#B28A9F',
-    fontSize: 12,
+    flex: 1,
+    color: '#AE96A1',
+    fontSize: 11,
+  },
+
+  importance: {
+    color: '#99717F',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   open: {
-    color: '#D9528B',
-    fontSize: 12,
+    color: '#A95073',
+    fontSize: 11,
     fontWeight: '800',
   },
 
   empty: {
-    minHeight: 250,
-
-    borderRadius: 30,
-
+    minHeight: 235,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-
-    padding: 28,
-
-    backgroundColor: 'rgba(255,255,255,0.76)',
-
+    padding: 30,
+    backgroundColor: '#FFFCFD',
     borderWidth: 1,
-    borderColor: '#FFD2E4',
+    borderColor: '#F0D6E0',
+  },
+
+  emptyMark: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FAE4EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 7,
+  },
+
+  emptyMarkLarge: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#C76A8E',
+  },
+
+  emptyMarkSmall: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#E2B3C5',
+    marginTop: 5,
   },
 
   emptyTitle: {
-    color: '#563749',
-    fontSize: 20,
-    fontWeight: '900',
-    marginTop: 7,
+    color: '#4F3543',
+    fontSize: 19,
+    fontWeight: '800',
   },
 
   emptyText: {
-    color: '#936C80',
+    color: '#896B79',
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
+    maxWidth: 280,
   },
 });
