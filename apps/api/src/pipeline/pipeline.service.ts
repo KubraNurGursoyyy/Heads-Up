@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SourcesService } from '../sources/sources.service';
 import { AiService } from '../ai/ai.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { articleMatchesIntersection, MATCH_MODE_INTERSECTION, normalizeIntersectionTerms } from '../common/intersection';
+import { articleContainsRequiredTerms, normalizeRequiredTerms } from '../common/required-terms';
 
 export type ProcessWatchOptions = {
   historical?: boolean;
@@ -38,9 +38,7 @@ export class PipelineService {
       prompt: watch.prompt,
       category: watch.category,
       aliases: (watch.aliases as string[]) ?? [],
-      intersectionTerms: watch.matchMode === MATCH_MODE_INTERSECTION
-        ? normalizeIntersectionTerms(watch.intersectionTerms)
-        : undefined,
+      requiredTerms: normalizeRequiredTerms(watch.requiredTerms),
       historical,
     });
 
@@ -49,10 +47,8 @@ export class PipelineService {
 
     for (const discoveredArticle of discovered) {
       if (
-        watch.matchMode === MATCH_MODE_INTERSECTION &&
-        discoveredArticle.searchReason !== 'intersection' &&
-        !articleMatchesIntersection(
-          watch.intersectionTerms,
+        !articleContainsRequiredTerms(
+          watch.requiredTerms,
           discoveredArticle.title,
           discoveredArticle.description,
         )

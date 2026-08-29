@@ -21,8 +21,8 @@ const required = [
   'apps/api/src/worker.ts',
   'apps/api/src/common/text-normalization.ts',
   'apps/api/src/common/text-normalization.test.mjs',
-  'apps/api/src/common/intersection.ts',
-  'apps/api/src/common/intersection.test.mjs',
+  'apps/api/src/common/required-terms.ts',
+  'apps/api/src/common/required-terms.test.mjs',
   'apps/mobile/package.json',
   'apps/mobile/.env.example',
   'apps/mobile/App.tsx',
@@ -44,9 +44,13 @@ const required = [
   'apps/api/src/sources/rss-image.test.mjs',
   'apps/api/prisma/migrations/202608290003_article_image_url/migration.sql',
   'apps/api/prisma/migrations/202608290004_watch_intersection/migration.sql',
+  'apps/api/prisma/migrations/202608290005_required_terms/migration.sql',
   'scripts/public-audit.mjs',
   'scripts/prepare-public.ps1',
   'apps/mobile/src/components/TopicDropdown.tsx',
+  'apps/mobile/src/components/RequiredTermsPicker.tsx',
+  'apps/mobile/src/components/HighlightedTopic.tsx',
+  'apps/mobile/src/components/EditWatchModal.tsx',
   'apps/mobile/src/utils/feed-topics.ts',
   'apps/mobile/src/utils/feed-topics.test.mjs',
 ];
@@ -215,14 +219,14 @@ if (!splashWidth || splashWidth > 8) {
 }
 
 
-if (!watchesDto.includes('intersectionTerms')) {
-  errors.push('CreateWatchDto must support two-term intersection watches.');
+if (!watchesDto.includes('requiredTerms')) {
+  errors.push('CreateWatchDto must support required watch terms.');
 }
-if (!searchPlan.includes("reason: 'intersection'") && !searchPlan.includes("'intersection'")) {
-  errors.push('Search plan must include intersection queries.');
+if (!searchPlan.includes("reason: 'required'") && !searchPlan.includes("'required'")) {
+  errors.push('Search plan must include required-term queries.');
 }
-if (!feedScreen.includes('filtersCompact')) {
-  errors.push('Feed filters must compact while the news list is scrolled.');
+if (!feedScreen.includes('compactVisible')) {
+  errors.push('Feed filters must expose a stable compact overlay while the news list is scrolled.');
 }
 
 const prismaSchema = read('apps/api/prisma/schema.prisma');

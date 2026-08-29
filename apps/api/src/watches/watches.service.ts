@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
@@ -10,15 +10,7 @@ import {
   normalizeWhitespace,
   sameTextInsensitive,
 } from '../common/text-normalization';
-import {
-  buildIntersectionPrompt,
-  buildIntersectionTopic,
-  intersectionKey,
-  MATCH_MODE_INTERSECTION,
-  MATCH_MODE_SINGLE,
-  normalizeIntersectionTerms,
-  type MatchMode,
-} from '../common/intersection';
+import { keepRequiredTermsPresentInText, normalizeRequiredTerms, requiredTermsKey } from '../common/required-terms';
 
 @Injectable()
 export class WatchesService {
@@ -40,11 +32,7 @@ export class WatchesService {
   }
 
   async listCategories(userId: string) {
-    const watches = await this.prisma.watch.findMany({
-      where: { userId },
-      select: { category: true },
-    });
-
+    const watches = await this.prisma.watch.findMany({ where: { userId }, select: { category: true } });
     return buildCategoryStats(watches.map(watch => watch.category));
   }
 
@@ -56,78 +44,30 @@ export class WatchesService {
     userId: string,
     prompt: string,
     mode: NotificationMode = 'IMPORTANT_ONLY',
-    hints?: {
-      topic?: string;
-      category?: string;
-      matchMode?: MatchMode;
-      intersectionTerms?: string[];
-    },
+    hints?: { topic?: string; category?: string; requiredTerms?: string[] },
   ) {
-    const matchMode = hints?.matchMode === MATCH_MODE_INTERSECTION
-      ? MATCH_MODE_INTERSECTION
-      : MATCH_MODE_SINGLE;
-    const intersectionTerms = matchMode === MATCH_MODE_INTERSECTION
-      ? normalizeIntersectionTerms(hints?.intersectionTerms)
-      : [];
-
-    if (matchMode === MATCH_MODE_INTERSECTION && intersectionTerms.length !== 2) {
-      throw new BadRequestException('Kesişim takibi için iki farklı konu gerekli.');
-    }
-
-    const cleanPrompt = matchMode === MATCH_MODE_INTERSECTION
-      ? buildIntersectionPrompt(intersectionTerms)
-      : normalizeWhitespace(prompt);
-
+    const cleanPrompt = normalizeWhitespace(prompt);
+    const requiredTerms = keepRequiredTermsPresentInText(hints?.requiredTerms, cleanPrompt);
     const existing = await this.prisma.watch.findMany({
       where: { userId },
-      select: { prompt: true, matchMode: true, intersectionTerms: true },
+      select: { prompt: true, requiredTerms: true },
     });
 
-    const duplicate = existing.some(watch => {
-      if (matchMode === MATCH_MODE_INTERSECTION) {
-        return (
-          watch.matchMode === MATCH_MODE_INTERSECTION &&
-          intersectionKey(watch.intersectionTerms) === intersectionKey(intersectionTerms)
-        );
-      }
-      return watch.matchMode !== MATCH_MODE_INTERSECTION && sameTextInsensitive(watch.prompt, cleanPrompt);
-    });
-
-    if (duplicate) {
-      throw new ConflictException(
-        'Bu takip zaten mevcut. Büyük/küçük harf veya aksan farkları ayrı takip sayılmaz.',
-      );
+    if (existing.some(watch => sameTextInsensitive(watch.prompt, cleanPrompt) && requiredTermsKey(watch.requiredTerms) === requiredTermsKey(requiredTerms))) {
+      throw new ConflictException('Bu takip ve kesin kelime seçimi zaten mevcut.');
     }
 
     const parsed = this.ai.buildQuickWatch(cleanPrompt, hints);
-    const category = normalizeCategoryName(parsed.category);
-    const topic = matchMode === MATCH_MODE_INTERSECTION
-      ? buildIntersectionTopic(intersectionTerms)
-      : normalizeWhitespace(parsed.topic);
-    const intent = matchMode === MATCH_MODE_INTERSECTION
-      ? `${intersectionTerms[0]} ve ${intersectionTerms[1]} ile birlikte ilgili gelişmeleri takip et.`
-      : normalizeWhitespace(parsed.intent);
-    const searchQueries = matchMode === MATCH_MODE_INTERSECTION
-      ? [
-          `"${intersectionTerms[0]}" "${intersectionTerms[1]}"`,
-          `${intersectionTerms[0]} ${intersectionTerms[1]}`,
-          ...parsed.searchQueries,
-        ]
-      : parsed.searchQueries;
-
     const watch = await this.prisma.watch.create({
       data: {
         userId,
         prompt: cleanPrompt,
-        topic,
-        intent,
-        category,
-        matchMode,
-        intersectionTerms: matchMode === MATCH_MODE_INTERSECTION ? intersectionTerms : undefined,
-        aliases: matchMode === MATCH_MODE_INTERSECTION
-          ? [...new Set([...intersectionTerms, ...parsed.aliases])]
-          : parsed.aliases,
-        searchQueries,
+        topic: normalizeWhitespace(parsed.topic),
+        intent: normalizeWhitespace(parsed.intent),
+        category: normalizeCategoryName(parsed.category),
+        requiredTerms,
+        aliases: parsed.aliases,
+        searchQueries: parsed.searchQueries,
         notifyEvents: parsed.notifyEvents,
         notificationMode: mode,
         importanceThreshold: Number(process.env.AI_IMPORTANCE_THRESHOLD ?? 0.72),
@@ -137,7 +77,6 @@ export class WatchesService {
     void this.queue.enqueueWatch(watch.id).catch(error => {
       this.logger.warn(`Initial scan could not be queued for ${watch.id}: ${String(error)}`);
     });
-
     return watch;
   }
 
@@ -149,52 +88,75 @@ export class WatchesService {
       notificationMode?: NotificationMode;
       importanceThreshold?: number;
       category?: string;
+      prompt?: string;
+      requiredTerms?: string[];
     },
   ) {
-    await this.assertOwned(userId, id);
+    const current = await this.assertOwned(userId, id);
+    const promptSupplied = data.prompt !== undefined;
+    const cleanPrompt = promptSupplied ? normalizeWhitespace(data.prompt!) : current.prompt;
+    const requiredTerms = data.requiredTerms !== undefined
+      ? keepRequiredTermsPresentInText(data.requiredTerms, cleanPrompt)
+      : normalizeRequiredTerms(current.requiredTerms);
+    const matchingChanged = promptSupplied || data.requiredTerms !== undefined;
+    const parsed = promptSupplied ? this.ai.buildQuickWatch(cleanPrompt) : null;
 
-    return this.prisma.watch.update({
+    if (matchingChanged) {
+      const others = await this.prisma.watch.findMany({
+        where: { userId, NOT: { id } },
+        select: { prompt: true, requiredTerms: true },
+      });
+      if (others.some(watch => sameTextInsensitive(watch.prompt, cleanPrompt) && requiredTermsKey(watch.requiredTerms) === requiredTermsKey(requiredTerms))) {
+        throw new ConflictException('Bu takip ve kesin kelime seçimi zaten mevcut.');
+      }
+    }
+
+    const updated = await this.prisma.watch.update({
       where: { id },
       data: {
-        ...data,
+        active: data.active,
+        notificationMode: data.notificationMode,
+        importanceThreshold: data.importanceThreshold,
         ...(data.category !== undefined
           ? { category: normalizeCategoryName(data.category) }
+          : promptSupplied && parsed
+            ? { category: normalizeCategoryName(parsed.category) }
+            : {}),
+        ...(promptSupplied && parsed
+          ? {
+              prompt: cleanPrompt,
+              topic: normalizeWhitespace(parsed.topic),
+              intent: normalizeWhitespace(parsed.intent),
+              aliases: parsed.aliases,
+              searchQueries: parsed.searchQueries,
+              notifyEvents: parsed.notifyEvents,
+            }
           : {}),
+        ...(data.requiredTerms !== undefined ? { requiredTerms } : {}),
+        ...(matchingChanged ? { lastCheckedAt: null } : {}),
       },
       include: { _count: { select: { watchArticles: true } } },
     });
+
+    if (matchingChanged) void this.queue.enqueueWatch(id, true).catch(() => undefined);
+    return updated;
   }
 
   async remove(userId: string, id: string) {
     await this.assertOwned(userId, id);
-
     await this.prisma.$transaction(async tx => {
       await tx.notification.deleteMany({ where: { watchId: id } });
       await tx.watchArticle.deleteMany({ where: { watchId: id } });
       await tx.watch.delete({ where: { id } });
     });
-
     return { ok: true };
   }
 
   async runNow(userId: string, id: string) {
     const watch = await this.assertOwned(userId, id);
-
-    if (!watch.active) {
-      return {
-        skipped: true,
-        reason: 'paused',
-        message: 'Takip duraklatılmış. Önce devam ettirip tekrar tara.',
-      };
-    }
-
+    if (!watch.active) return { skipped: true, reason: 'paused', message: 'Takip duraklatılmış. Önce devam ettirip tekrar tara.' };
     const result = await this.pipeline.processWatch(id, { historical: true });
-
-    return {
-      queued: false,
-      completed: true,
-      ...result,
-    };
+    return { queued: false, completed: true, ...result };
   }
 
   private async assertOwned(userId: string, id: string) {

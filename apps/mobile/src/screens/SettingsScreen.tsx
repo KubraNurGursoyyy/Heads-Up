@@ -30,7 +30,7 @@ const feedOptions: Array<[FeedFilter, string]> = [
   ['unread', 'Okunmamış'],
 ];
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ onHome }: { onHome?: () => void }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
   const [connection, setConnection] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
@@ -71,6 +71,7 @@ export default function SettingsScreen() {
         title="Ayarlar"
         subtitle="Varsayılan davranışları değiştir. Bu seçimler cihazda saklanır ve sonraki ekran açılışlarında uygulanır."
         kicker="HEADSUP / PREFERENCES"
+        onLogoPress={onHome}
       />
 
       {saved ? (

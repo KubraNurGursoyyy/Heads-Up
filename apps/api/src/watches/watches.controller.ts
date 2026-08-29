@@ -29,8 +29,7 @@ export class WatchesController {
     return this.watches.create(user.sub, dto.prompt, dto.notificationMode, {
       topic: dto.topicHint,
       category: dto.categoryHint,
-      matchMode: dto.matchMode,
-      intersectionTerms: dto.intersectionTerms,
+      requiredTerms: dto.requiredTerms,
     });
   }
 

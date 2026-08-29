@@ -8,14 +8,14 @@ module.exports = {
     version: '0.1.0',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
-    icon: './assets/icon-safe.png',
+    icon: './assets/launcher-icon.png',
 
     android: {
       package: 'com.headsup.app',
       versionCode: 1,
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon-safe.png',
-        backgroundColor: '#350727',
+        foregroundImage: './assets/launcher-icon.png',
+        backgroundColor: '#F7C8DA',
       },
     },
 
@@ -24,7 +24,7 @@ module.exports = {
         'expo-splash-screen',
         {
           image: './assets/native-splash-transparent.png',
-          backgroundColor: '#350727',
+          backgroundColor: '#F7C8DA',
           resizeMode: 'contain',
           imageWidth: 1,
         },

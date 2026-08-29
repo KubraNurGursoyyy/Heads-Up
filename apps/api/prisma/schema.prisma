@@ -64,8 +64,7 @@ model Watch {
   topic               String
   intent              String
   category            String
-  matchMode           String           @default("SINGLE")
-  intersectionTerms   Json?
+  requiredTerms       Json             @default("[]")
   aliases             Json
   searchQueries       Json
   notifyEvents        Json

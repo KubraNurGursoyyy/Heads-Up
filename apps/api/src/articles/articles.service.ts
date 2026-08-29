@@ -103,6 +103,7 @@ export class ArticlesService {
           topic: true,
           category: true,
           notificationMode: true,
+          requiredTerms: true,
         },
       },
     } as const;

@@ -2,6 +2,7 @@ export type FeedWatchOption = {
   id: string;
   topic: string;
   category: string;
+  requiredTerms?: string[] | null;
 };
 
 function sameText(a: string, b: string) {

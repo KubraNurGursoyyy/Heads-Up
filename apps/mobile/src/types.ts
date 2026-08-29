@@ -5,7 +5,6 @@ export type NotificationMode =
   | 'OFF';
 
 export type Category = string;
-export type WatchMatchMode = 'SINGLE' | 'INTERSECTION';
 
 export type WatchCategory = {
   name: string;
@@ -26,8 +25,7 @@ export type Watch = {
   topic: string;
   intent: string;
   category: Category;
-  matchMode?: WatchMatchMode;
-  intersectionTerms?: string[] | null;
+  requiredTerms?: string[] | null;
   notificationMode: NotificationMode;
   active: boolean;
   lastCheckedAt?: string | null;
@@ -57,6 +55,7 @@ export type FeedItem = {
     topic: string;
     category: Category;
     notificationMode: NotificationMode;
+    requiredTerms?: string[] | null;
   };
 };
 

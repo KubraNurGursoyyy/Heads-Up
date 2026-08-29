@@ -3,11 +3,12 @@ import {
   Image,
   Platform,
   SafeAreaView,
+  StatusBar as NativeStatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { ensureSingleUserSession } from './src/api';
 import { registerPush, subscribePushResponses } from './src/push';
 import { colors, fontFamily, Loading } from './src/ui';
@@ -61,7 +62,7 @@ export default function App() {
     return (
       <PinkBackground>
         <SafeAreaView style={styles.safeArea}>
-          <StatusBar style="light" />
+          <ExpoStatusBar style="light" />
           <Loading />
         </SafeAreaView>
       </PinkBackground>
@@ -72,7 +73,7 @@ export default function App() {
     return (
       <PinkBackground>
         <SafeAreaView style={styles.safeArea}>
-          <StatusBar style="light" />
+          <ExpoStatusBar style="light" />
           <View style={styles.errorContainer}>
             <View style={styles.errorPanel}>
               <View style={styles.errorGoldLine} />
@@ -94,20 +95,25 @@ export default function App() {
     );
   }
 
+  function goHome() {
+    setArchiveOpen(false);
+    setTab('feed');
+  }
+
   return (
     <PinkBackground>
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="light" />
+        <ExpoStatusBar style="light" />
 
         <View style={styles.content}>
           {archiveOpen ? (
-            <ArchiveScreen onBack={() => setArchiveOpen(false)} />
+            <ArchiveScreen onHome={goHome} />
           ) : (
             <>
-              {tab === 'feed' && <FeedScreen onOpenArchive={() => setArchiveOpen(true)} />}
-              {tab === 'add' && <AddWatchScreen onAdded={() => setTab('watches')} />}
-              {tab === 'watches' && <WatchesScreen />}
-              {tab === 'settings' && <SettingsScreen />}
+              {tab === 'feed' && <FeedScreen onOpenArchive={() => setArchiveOpen(true)} onHome={goHome} />}
+              {tab === 'add' && <AddWatchScreen onAdded={() => setTab('watches')} onHome={goHome} />}
+              {tab === 'watches' && <WatchesScreen onHome={goHome} />}
+              {tab === 'settings' && <SettingsScreen onHome={goHome} />}
             </>
           )}
         </View>
@@ -122,6 +128,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
+    paddingTop: Platform.OS === 'android' ? NativeStatusBar.currentHeight ?? 0 : 0,
   },
   content: {
     flex: 1,
