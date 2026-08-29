@@ -144,7 +144,7 @@ export default function WatchesScreen() {
       <View style={styles.header}>
         <AppHeader
           title="Takiplerim"
-          subtitle="Merak ettiklerinin hepsi burada 🌸"
+          subtitle="Aktif ve geçmiş takiplerini buradan yönet."
         />
       </View>
 
@@ -176,9 +176,7 @@ export default function WatchesScreen() {
             <View style={styles.card}>
               <View style={styles.titleRow}>
                 <View style={styles.icon}>
-                  <Text style={styles.iconText}>
-                    ♡
-                  </Text>
+                  <View style={styles.watchDot} />
                 </View>
 
                 <View style={styles.titleArea}>
@@ -318,12 +316,12 @@ const styles = StyleSheet.create({
   },
 
   icon: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
 
-    borderRadius: 22,
+    borderRadius: 21,
 
-    backgroundColor: '#FFE8F1',
+    backgroundColor: '#FAE4EC',
 
     alignItems: 'center',
     justifyContent: 'center',
@@ -331,10 +329,13 @@ const styles = StyleSheet.create({
     marginRight: 11,
   },
 
-  iconText: {
-    color: '#ED6FA2',
-    fontSize: 23,
-    fontWeight: '900',
+  watchDot: {
+    width: 10,
+    height: 10,
+
+    borderRadius: 5,
+
+    backgroundColor: '#C76A8E',
   },
 
   titleArea: {

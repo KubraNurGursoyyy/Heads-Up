@@ -18,13 +18,11 @@ export default function AppHeader({
 }: Props) {
   return (
     <View style={styles.root}>
-      <View style={styles.logoCircle}>
-        <Image
-          source={require('../../assets/logo.png')}
-          resizeMode="contain"
-          style={styles.logo}
-        />
-      </View>
+      <Image
+        source={require('../../assets/logo.png')}
+        resizeMode="contain"
+        style={styles.logo}
+      />
 
       <View style={styles.textArea}>
         <Text style={styles.title}>
@@ -38,9 +36,10 @@ export default function AppHeader({
         ) : null}
       </View>
 
-      <Text style={styles.heart}>
-        ♡
-      </Text>
+      <View style={styles.accent}>
+        <View style={styles.accentDotLarge} />
+        <View style={styles.accentDotSmall} />
+      </View>
     </View>
   );
 }
@@ -48,54 +47,68 @@ export default function AppHeader({
 const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-
-  logoCircle: {
-    width: 64,
-    height: 64,
-
-    borderRadius: 32,
-
-    backgroundColor: 'rgba(255,255,255,0.85)',
-
-    borderWidth: 1,
-    borderColor: '#FFD2E4',
 
     alignItems: 'center',
-    justifyContent: 'center',
 
-    elevation: 3,
+    marginBottom: 22,
   },
 
   logo: {
-    width: 56,
-    height: 56,
+    width: 54,
+    height: 54,
+
+    marginRight: 13,
   },
 
   textArea: {
     flex: 1,
-    marginLeft: 12,
   },
 
   title: {
-    color: '#563749',
+    color: '#4F3543',
+
     fontSize: 24,
-    fontWeight: '900',
+
+    fontWeight: '800',
+
     letterSpacing: -0.6,
   },
 
   subtitle: {
-    marginTop: 3,
-    color: '#936C80',
+    marginTop: 4,
+
+    color: '#896B79',
+
     fontSize: 13,
+
     lineHeight: 18,
   },
 
-  heart: {
-    color: '#ED6FA2',
-    fontSize: 28,
-    marginLeft: 8,
+  accent: {
+    width: 28,
+    height: 28,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  accentDotLarge: {
+    width: 9,
+    height: 9,
+
+    borderRadius: 5,
+
+    backgroundColor: '#D18AA6',
+  },
+
+  accentDotSmall: {
+    width: 4,
+    height: 4,
+
+    borderRadius: 2,
+
+    backgroundColor: '#E4C5D1',
+
+    marginTop: 4,
   },
 });

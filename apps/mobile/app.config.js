@@ -16,7 +16,7 @@ module.exports = {
 
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#F6A8C3',
+        backgroundColor: '#F8DCE7',
       },
     },
 
@@ -25,9 +25,9 @@ module.exports = {
         'expo-splash-screen',
         {
           image: './assets/splash.png',
-          backgroundColor: '#F6A8C3',
-          resizeMode: 'cover',
-          imageWidth: 390,
+          backgroundColor: '#F8DCE7',
+          resizeMode: 'contain',
+          imageWidth: 260,
         },
       ],
 
@@ -35,7 +35,7 @@ module.exports = {
         'expo-notifications',
         {
           icon: './assets/notification-icon.png',
-          color: '#F48FB1',
+          color: '#C76A8E',
           defaultChannel: 'important-news',
         },
       ],

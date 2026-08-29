@@ -18,67 +18,53 @@ export default function SettingsScreen() {
     >
       <AppHeader
         title="Ayarlar"
-        subtitle="HeadsUp'ı kendine göre ayarla ✨"
+        subtitle="HeadsUp deneyimini yönet."
       />
 
       <SettingCard
-        icon="♡"
         title="Kişisel kullanım"
-        description="Bu HeadsUp kurulumu yalnızca senin için. Giriş veya kayıt ekranı yok."
+        description="Bu kurulum yalnızca senin kullanımın için yapılandırıldı."
       />
 
       <SettingCard
-        icon="🔔"
         title="Bildirimler"
-        description="Telefon bildirimleri uygulama açılırken otomatik hazırlanır."
-        iconBackground="#E8D7F7"
+        description="Önemli gelişmeleri telefonuna bildirim olarak alabilirsin."
       />
 
       <SettingCard
-        icon="✨"
         title="HeadsUp"
-        description="Merak ettiğin şeyi unutma. HeadsUp senin yerine takip etsin."
-        iconBackground="#FFE6A6"
+        description="Takip ettiğin konuları düzenli olarak kontrol eder ve yeni gelişmeleri tek yerde toplar."
       />
 
-      <Image
-        source={require('../../assets/logo.png')}
-        resizeMode="contain"
-        style={styles.logo}
-      />
+      <View style={styles.brandArea}>
+        <Image
+          source={require('../../assets/logo.png')}
+          resizeMode="contain"
+          style={styles.logo}
+        />
 
-      <Text style={styles.footer}>
-        made with ♡
-      </Text>
+        <Text style={styles.brand}>
+          HeadsUp
+        </Text>
+
+        <Text style={styles.version}>
+          Personal edition
+        </Text>
+      </View>
     </ScrollView>
   );
 }
 
 function SettingCard({
-  icon,
   title,
   description,
-  iconBackground = '#FFE8F1',
 }: {
-  icon: string;
   title: string;
   description: string;
-  iconBackground?: string;
 }) {
   return (
     <View style={styles.card}>
-      <View
-        style={[
-          styles.icon,
-          {
-            backgroundColor: iconBackground,
-          },
-        ]}
-      >
-        <Text style={styles.iconText}>
-          {icon}
-        </Text>
-      </View>
+      <View style={styles.accent} />
 
       <View style={styles.content}>
         <Text style={styles.title}>
@@ -95,41 +81,50 @@ function SettingCard({
 
 const styles = StyleSheet.create({
   root: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingTop: 18,
-    paddingBottom: 30,
+    paddingBottom: 36,
   },
 
   card: {
     flexDirection: 'row',
+
     alignItems: 'center',
 
-    padding: 15,
+    padding: 18,
+
     marginBottom: 12,
 
-    borderRadius: 24,
+    borderRadius: 20,
 
-    backgroundColor: 'rgba(255,255,255,0.86)',
+    backgroundColor: '#FFFCFD',
 
     borderWidth: 1,
-    borderColor: '#FFD2E4',
+    borderColor: '#F0D6E0',
+
+    shadowColor: '#6A4556',
+
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+
+    shadowOpacity: 0.05,
+
+    shadowRadius: 16,
+
+    elevation: 2,
   },
 
-  icon: {
-    width: 54,
-    height: 54,
+  accent: {
+    width: 4,
+    height: 34,
 
-    borderRadius: 27,
+    borderRadius: 4,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#D18AA6',
 
-    marginRight: 13,
-  },
-
-  iconText: {
-    fontSize: 24,
-    color: '#ED6FA2',
+    marginRight: 14,
   },
 
   content: {
@@ -137,35 +132,53 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: '#563749',
-    fontSize: 16,
-    fontWeight: '900',
+    color: '#4F3543',
+
+    fontSize: 15,
+
+    fontWeight: '800',
   },
 
   description: {
-    color: '#936C80',
-    marginTop: 4,
-    lineHeight: 18,
+    marginTop: 5,
+
+    color: '#896B79',
+
     fontSize: 13,
+
+    lineHeight: 19,
+  },
+
+  brandArea: {
+    alignItems: 'center',
+
+    marginTop: 36,
   },
 
   logo: {
-    width: 135,
-    height: 135,
-
-    alignSelf: 'center',
-
-    marginTop: 25,
+    width: 90,
+    height: 90,
   },
 
-  footer: {
-    textAlign: 'center',
+  brand: {
+    marginTop: 8,
 
-    color: '#B28A9F',
+    color: '#694656',
 
-    fontWeight: '700',
+    fontSize: 16,
 
-    marginTop: -8,
-    marginBottom: 15,
+    fontWeight: '800',
+
+    letterSpacing: 0.4,
+  },
+
+  version: {
+    marginTop: 3,
+
+    color: '#B29AA5',
+
+    fontSize: 11,
+
+    letterSpacing: 0.7,
   },
 });

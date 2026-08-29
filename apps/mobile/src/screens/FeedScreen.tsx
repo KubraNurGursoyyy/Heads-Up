@@ -34,12 +34,12 @@ type FeedFilter =
 const categories: Array<
   [Category | 'ALL', string]
 > = [
-  ['ALL', '✨ Tümü'],
-  ['GAME', '🎮 Oyun'],
-  ['BOOK', '📚 Kitap'],
-  ['MOVIE_TV', '🎬 Film / Dizi'],
-  ['TECHNOLOGY', '💻 Teknoloji'],
-  ['GENERAL', '🌸 Diğer'],
+  ['ALL', 'Tümü'],
+  ['GAME', 'Oyun'],
+  ['BOOK', 'Kitap'],
+  ['MOVIE_TV', 'Film & Dizi'],
+  ['TECHNOLOGY', 'Teknoloji'],
+  ['GENERAL', 'Diğer'],
 ];
 
 export default function FeedScreen() {
@@ -94,8 +94,8 @@ export default function FeedScreen() {
     <View style={styles.root}>
       <View style={styles.headerArea}>
         <AppHeader
-          title="Bugün neler var?"
-          subtitle="Takip ettiklerindeki gelişmeler burada ✨"
+          title="Bugün neler oldu?"
+          subtitle="Takip ettiklerindeki gelişmeler"
         />
 
         <Text style={styles.sectionTitle}>
@@ -125,13 +125,13 @@ export default function FeedScreen() {
           />
 
           <FilterChip
-            label="⭐ Önemli"
+            label="Önemli"
             selected={filter === 'important'}
             onPress={() => setFilter('important')}
           />
 
           <FilterChip
-            label="💌 Yeni"
+            label="Yeni"
             selected={filter === 'unread'}
             onPress={() => setFilter('unread')}
           />
@@ -159,21 +159,17 @@ export default function FeedScreen() {
 function EmptyFeed() {
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyCloud}>
-        ☁️
-      </Text>
+      <View style={styles.emptyMark}>
+        <View style={styles.emptyMarkLarge} />
+        <View style={styles.emptyMarkSmall} />
+      </View>
 
       <Text style={styles.emptyTitle}>
-        Şimdilik sessiz...
+        Şimdilik sessiz
       </Text>
 
       <Text style={styles.emptyText}>
-        Takip eklediğinde yeni gelişmeler burada
-        belirecek.
-      </Text>
-
-      <Text style={styles.emptyStars}>
-        ✦ ♡ ✦
+        Takip ettiğin konularda yeni bir gelişme olduğunda burada göreceksin.
       </Text>
     </View>
   );
@@ -245,6 +241,39 @@ function FeedCard({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+emptyMark: {
+  width: 54,
+  height: 54,
+
+  borderRadius: 27,
+
+  backgroundColor: '#FAE4EC',
+
+  alignItems: 'center',
+  justifyContent: 'center',
+
+  marginBottom: 4,
+},
+
+  emptyMarkLarge: {
+    width: 12,
+    height: 12,
+
+    borderRadius: 6,
+
+    backgroundColor: '#C76A8E',
+  },
+
+  emptyMarkSmall: {
+    width: 5,
+    height: 5,
+
+    borderRadius: 3,
+
+    backgroundColor: '#E2B3C5',
+
+    marginTop: 5,
   },
 
   headerArea: {
@@ -386,10 +415,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFD2E4',
   },
 
-  emptyCloud: {
-    fontSize: 55,
-  },
-
   emptyTitle: {
     color: '#563749',
     fontSize: 20,
@@ -402,11 +427,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
-  },
-
-  emptyStars: {
-    color: '#E4B95F',
-    marginTop: 15,
-    fontSize: 18,
   },
 });

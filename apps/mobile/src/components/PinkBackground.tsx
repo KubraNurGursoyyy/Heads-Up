@@ -14,58 +14,90 @@ type Props = {
   children: React.ReactNode;
 };
 
-function FloatingItem({
-  children,
+function FloatingGlow({
   style,
-  distance = 14,
-  duration = 6500,
+  duration,
+  distance,
 }: {
-  children: string;
   style: object;
-  distance?: number;
-  duration?: number;
+  duration: number;
+  distance: number;
 }) {
   const translateY = useRef(
+    new Animated.Value(0),
+  ).current;
+
+  const translateX = useRef(
     new Animated.Value(0),
   ).current;
 
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(translateY, {
-          toValue: -distance,
-          duration,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: -distance,
+            duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
 
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
+          Animated.timing(translateX, {
+            toValue: distance * 0.45,
+            duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+
+          Animated.timing(translateX, {
+            toValue: 0,
+            duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
       ]),
     );
 
     animation.start();
 
-    return () => animation.stop();
-  }, [distance, duration, translateY]);
+    return () => {
+      animation.stop();
+    };
+  }, [
+    distance,
+    duration,
+    translateX,
+    translateY,
+  ]);
 
   return (
-    <Animated.Text
+    <Animated.View
       pointerEvents="none"
       style={[
-        styles.decor,
+        styles.glow,
         style,
         {
-          transform: [{ translateY }],
+          transform: [
+            {
+              translateX,
+            },
+            {
+              translateY,
+            },
+          ],
         },
       ]}
-    >
-      {children}
-    </Animated.Text>
+    />
   );
 }
 
@@ -74,52 +106,28 @@ export default function PinkBackground({
 }: Props) {
   return (
     <View style={styles.root}>
-      <FloatingItem
-        style={styles.cloudOne}
-        duration={7000}
-      >
-        ☁️
-      </FloatingItem>
-
-      <FloatingItem
-        style={styles.cloudTwo}
-        duration={8500}
-        distance={10}
-      >
-        ☁️
-      </FloatingItem>
-
-      <FloatingItem
-        style={styles.cloudThree}
-        duration={10000}
+      <FloatingGlow
+        style={styles.glowOne}
+        duration={9000}
         distance={18}
-      >
-        ☁️
-      </FloatingItem>
+      />
 
-      <FloatingItem
-        style={styles.starOne}
-        duration={3500}
-        distance={7}
-      >
-        ✦
-      </FloatingItem>
+      <FloatingGlow
+        style={styles.glowTwo}
+        duration={12000}
+        distance={24}
+      />
 
-      <FloatingItem
-        style={styles.starTwo}
-        duration={4300}
-        distance={5}
-      >
-        ✧
-      </FloatingItem>
+      <FloatingGlow
+        style={styles.glowThree}
+        duration={10500}
+        distance={14}
+      />
 
-      <FloatingItem
-        style={styles.flower}
-        duration={6000}
-        distance={8}
-      >
-        🌸
-      </FloatingItem>
+      <View
+        pointerEvents="none"
+        style={styles.topFade}
+      />
 
       <View style={styles.content}>
         {children}
@@ -131,61 +139,68 @@ export default function PinkBackground({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFF3F8',
+
+    backgroundColor: '#FFF8FA',
+
     overflow: 'hidden',
   },
 
   content: {
     flex: 1,
-    zIndex: 2,
+    zIndex: 5,
   },
 
-  decor: {
+  glow: {
     position: 'absolute',
-    zIndex: 1,
+
+    borderRadius: 999,
   },
 
-  cloudOne: {
-    fontSize: 95,
-    opacity: 0.13,
-    top: 90,
-    left: -30,
+  glowOne: {
+    width: 310,
+    height: 310,
+
+    top: -110,
+    right: -140,
+
+    backgroundColor: '#F7DDE7',
+
+    opacity: 0.48,
   },
 
-  cloudTwo: {
-    fontSize: 72,
-    opacity: 0.11,
-    top: 340,
-    right: -18,
+  glowTwo: {
+    width: 360,
+    height: 360,
+
+    bottom: -170,
+    left: -190,
+
+    backgroundColor: '#F1DCE7',
+
+    opacity: 0.42,
   },
 
-  cloudThree: {
-    fontSize: 110,
-    opacity: 0.08,
-    bottom: 80,
-    left: -38,
+  glowThree: {
+    width: 180,
+    height: 180,
+
+    top: 330,
+    right: -100,
+
+    backgroundColor: '#EEE2EF',
+
+    opacity: 0.34,
   },
 
-  starOne: {
-    top: 150,
-    right: 28,
-    fontSize: 28,
-    color: '#E4B95F',
-    opacity: 0.65,
-  },
+  topFade: {
+    position: 'absolute',
 
-  starTwo: {
-    top: 470,
-    left: 27,
-    fontSize: 22,
-    color: '#E4B95F',
-    opacity: 0.5,
-  },
+    top: 0,
+    left: 0,
+    right: 0,
 
-  flower: {
-    right: 24,
-    bottom: 160,
-    fontSize: 22,
-    opacity: 0.3,
+    height: 180,
+
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
 });

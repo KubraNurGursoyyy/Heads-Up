@@ -21,27 +21,22 @@ type Props = {
 const tabs: Array<{
   value: AppTab;
   label: string;
-  icon: string;
 }> = [
   {
     value: 'feed',
     label: 'Haberler',
-    icon: '☁',
   },
   {
     value: 'add',
-    label: 'Takip Ekle',
-    icon: '＋',
+    label: 'Yeni Takip',
   },
   {
     value: 'watches',
-    label: 'Takiplerim',
-    icon: '♡',
+    label: 'Takipler',
   },
   {
     value: 'settings',
     label: 'Ayarlar',
-    icon: '⚙',
   },
 ];
 
@@ -50,7 +45,7 @@ export default function BottomTabs({
   onChange,
 }: Props) {
   return (
-    <View style={styles.outer}>
+    <View style={styles.wrapper}>
       <View style={styles.root}>
         {tabs.map(tab => {
           const selected =
@@ -66,28 +61,17 @@ export default function BottomTabs({
             >
               <View
                 style={[
-                  styles.iconCircle,
+                  styles.indicator,
                   selected &&
-                    styles.iconCircleSelected,
+                    styles.indicatorActive,
                 ]}
-              >
-                <Text
-                  style={[
-                    styles.icon,
-                    selected &&
-                      styles.iconSelected,
-                  ]}
-                >
-                  {tab.icon}
-                </Text>
-              </View>
+              />
 
               <Text
-                numberOfLines={1}
                 style={[
                   styles.label,
                   selected &&
-                    styles.labelSelected,
+                    styles.labelActive,
                 ]}
               >
                 {tab.label}
@@ -101,28 +85,37 @@ export default function BottomTabs({
 }
 
 const styles = StyleSheet.create({
-  outer: {
-    paddingHorizontal: 12,
-    paddingTop: 4,
-    paddingBottom: 8,
+  wrapper: {
+    paddingHorizontal: 14,
+    paddingBottom: 10,
   },
 
   root: {
-    minHeight: 72,
-
     flexDirection: 'row',
 
-    borderRadius: 26,
+    minHeight: 66,
 
-    paddingHorizontal: 5,
-    paddingVertical: 6,
+    paddingHorizontal: 6,
 
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: 'rgba(255,252,253,0.96)',
+
+    borderRadius: 22,
 
     borderWidth: 1,
-    borderColor: '#FFD2E4',
+    borderColor: '#F0D6E0',
 
-    elevation: 6,
+    shadowColor: '#6A4556',
+
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+
+    shadowOpacity: 0.08,
+
+    shadowRadius: 20,
+
+    elevation: 4,
   },
 
   tab: {
@@ -132,42 +125,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  iconCircle: {
-    width: 35,
-    height: 30,
+  indicator: {
+    width: 18,
+    height: 3,
 
-    borderRadius: 15,
+    borderRadius: 3,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 7,
+
+    backgroundColor: 'transparent',
   },
 
-  iconCircleSelected: {
-    backgroundColor: '#FFD2E4',
-  },
-
-  icon: {
-    fontSize: 19,
-    color: '#B28A9F',
-    fontWeight: '900',
-  },
-
-  iconSelected: {
-    color: '#D9528B',
+  indicatorActive: {
+    backgroundColor: '#C76A8E',
   },
 
   label: {
-    marginTop: 3,
+    color: '#A28A95',
 
-    fontSize: 10,
+    fontSize: 11,
 
-    color: '#B28A9F',
-
-    fontWeight: '700',
+    fontWeight: '600',
   },
 
-  labelSelected: {
-    color: '#D9528B',
-    fontWeight: '900',
+  labelActive: {
+    color: '#704456',
+
+    fontWeight: '800',
   },
 });

@@ -96,15 +96,11 @@ export default function AddWatchScreen({
       contentContainerStyle={styles.root}
     >
       <AppHeader
-        title="Neyi merak ediyoruz?"
-        subtitle="Söyle, HeadsUp senin için takip etsin ♡"
+        title="Yeni takip"
+        subtitle="Merak ettiğin konuyu doğal bir şekilde yaz."
       />
 
       <View style={styles.promptCard}>
-        <Text style={styles.cloud}>
-          ☁️
-        </Text>
-
         <Text style={styles.promptTitle}>
           Normal şekilde yaz
         </Text>
@@ -172,7 +168,7 @@ export default function AddWatchScreen({
         title={
           busy
             ? 'Takip hazırlanıyor...'
-            : 'Takibi başlat ✨'
+            : 'Takibi başlat'
         }
         onPress={save}
         disabled={
