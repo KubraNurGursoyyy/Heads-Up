@@ -11,9 +11,7 @@ import {
   BootstrapDto,
   RefreshDto,
 } from './auth.dto';
-
 import { AuthGuard } from './auth.guard';
-
 import {
   CurrentUser,
   JwtUser,
@@ -22,7 +20,7 @@ import {
 @Controller('auth')
 export class AuthController {
   constructor(
-    private auth: AuthService,
+    private readonly auth: AuthService,
   ) {}
 
   @Post('bootstrap')

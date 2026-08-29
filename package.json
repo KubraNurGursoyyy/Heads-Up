@@ -15,14 +15,10 @@
     "prisma:generate": "npm --workspace @headsup/api run prisma:generate",
     "prisma:migrate": "npm --workspace @headsup/api run prisma:migrate",
     "prisma:deploy": "npm --workspace @headsup/api run prisma:deploy",
-    "dev:usb": "powershell -ExecutionPolicy Bypass -File ./dev-usb.ps1"
+    "dev:usb": "powershell -ExecutionPolicy Bypass -File ./dev-usb.ps1",
+    "validate": "node scripts/validate-project.mjs"
   },
   "engines": {
     "node": ">=22.13.0"
-  },
-  "dependencies": {
-    "expo": "~57.0.18",
-    "react": "19.2.3",
-    "react-native": "0.86.3"
   }
 }

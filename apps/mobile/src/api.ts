@@ -1,9 +1,13 @@
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-const BASE = (
+const RAW_BASE = (
   process.env.EXPO_PUBLIC_API_URL ||
-  'http://10.0.2.2:3000'
-).replace(/\/$/, '');
+  'http://127.0.0.1:3000'
+).replace(/\/+$/, '');
+
+// Backend controller routes are rooted at /auth, /feed, /watches, etc.
+// Older local configs used an extra /api suffix, so tolerate it here.
+const BASE = RAW_BASE.replace(/\/api$/i, '');
 
 const SINGLE_USER_KEY =
   process.env.EXPO_PUBLIC_HEADSUP_SINGLE_USER_KEY || '';
@@ -11,35 +15,102 @@ const SINGLE_USER_KEY =
 const ACCESS = 'headsup_access';
 const REFRESH = 'headsup_refresh';
 
-export async function saveSession(session: {
-  accessToken: string;
-  refreshToken: string;
-}) {
-  await SecureStore.setItemAsync(
-    ACCESS,
-    session.accessToken,
+async function getStorageItem(
+  key: string,
+): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    return window.localStorage.getItem(key);
+  }
+
+  const SecureStore = await import(
+    'expo-secure-store'
+  );
+
+  return SecureStore.getItemAsync(key);
+}
+
+async function setStorageItem(
+  key: string,
+  value: string,
+): Promise<void> {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(
+        key,
+        value,
+      );
+    }
+
+    return;
+  }
+
+  const SecureStore = await import(
+    'expo-secure-store'
   );
 
   await SecureStore.setItemAsync(
-    REFRESH,
-    session.refreshToken,
+    key,
+    value,
   );
 }
 
+async function deleteStorageItem(
+  key: string,
+): Promise<void> {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(key);
+    }
+
+    return;
+  }
+
+  const SecureStore = await import(
+    'expo-secure-store'
+  );
+
+  await SecureStore.deleteItemAsync(key);
+}
+
+export async function saveSession(
+  session: {
+    accessToken: string;
+    refreshToken: string;
+  },
+) {
+  await Promise.all([
+    setStorageItem(
+      ACCESS,
+      session.accessToken,
+    ),
+
+    setStorageItem(
+      REFRESH,
+      session.refreshToken,
+    ),
+  ]);
+}
+
 export async function clearSession() {
-  await SecureStore.deleteItemAsync(ACCESS);
-  await SecureStore.deleteItemAsync(REFRESH);
+  await Promise.all([
+    deleteStorageItem(ACCESS),
+    deleteStorageItem(REFRESH),
+  ]);
 }
 
 export async function hasSession() {
   return Boolean(
-    await SecureStore.getItemAsync(REFRESH),
+    await getStorageItem(REFRESH),
   );
 }
 
 async function refresh() {
   const refreshToken =
-    await SecureStore.getItemAsync(REFRESH);
+    await getStorageItem(REFRESH);
 
   if (!refreshToken) {
     return false;
@@ -49,9 +120,12 @@ async function refresh() {
     `${BASE}/auth/refresh`,
     {
       method: 'POST',
+
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':
+          'application/json',
       },
+
       body: JSON.stringify({
         refreshToken,
       }),
@@ -60,10 +134,12 @@ async function refresh() {
 
   if (!response.ok) {
     await clearSession();
+
     return false;
   }
 
-  const session = await response.json();
+  const session =
+    await response.json();
 
   await saveSession(session);
 
@@ -76,13 +152,18 @@ export async function api<T = any>(
   retry = true,
 ): Promise<T> {
   const token =
-    await SecureStore.getItemAsync(ACCESS);
+    await getStorageItem(ACCESS);
 
-  const headers: Record<string, string> = {
+  const headers: Record<
+    string,
+    string
+  > = {
+    'Content-Type':
+      'application/json',
+
     ...(init.headers as
       | Record<string, string>
       | undefined),
-    'Content-Type': 'application/json',
   };
 
   if (token) {
@@ -119,19 +200,23 @@ export async function api<T = any>(
         await response.json();
 
       message =
-        body.message || message;
-    } catch {}
+        Array.isArray(body.message)
+          ? body.message.join('\n')
+          : body.message || message;
+    } catch {
+      // Response JSON değilse status mesajını kullan.
+    }
 
     throw new Error(
-      Array.isArray(message)
-        ? message.join('\n')
-        : String(message),
+      String(message),
     );
   }
 
-  return response.status === 204
-    ? (undefined as T)
-    : response.json();
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json();
 }
 
 async function bootstrapSingleUser() {
@@ -148,8 +233,10 @@ async function bootstrapSingleUser() {
     '/auth/bootstrap',
     {
       method: 'POST',
+
       body: JSON.stringify({
-        accessKey: SINGLE_USER_KEY,
+        accessKey:
+          SINGLE_USER_KEY,
       }),
     },
     false,
@@ -162,6 +249,7 @@ export async function ensureSingleUserSession() {
   if (await hasSession()) {
     try {
       await api('/auth/me');
+
       return;
     } catch {
       await clearSession();

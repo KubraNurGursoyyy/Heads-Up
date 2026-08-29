@@ -1,24 +1,31 @@
 import React, { useEffect, useState } from 'react';
+
 import {
   Image,
+  Platform,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
 import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
 
 import { ensureSingleUserSession } from './src/api';
+
 import {
   registerPush,
   subscribePushResponses,
 } from './src/push';
 
-import { Loading, ui } from './src/ui';
+import {
+  Loading,
+  ui,
+} from './src/ui';
 
 import StartupSplash from './src/components/StartupSplash';
 import PinkBackground from './src/components/PinkBackground';
+
 import BottomTabs, {
   type AppTab,
 } from './src/components/BottomTabs';
@@ -28,20 +35,26 @@ import AddWatchScreen from './src/screens/AddWatchScreen';
 import WatchesScreen from './src/screens/WatchesScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
-SplashScreen.preventAutoHideAsync().catch(() => undefined);
-
 export default function App() {
-  const [tab, setTab] = useState<AppTab>('feed');
+  const [tab, setTab] =
+    useState<AppTab>('feed');
 
-  const [bootReady, setBootReady] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [bootReady, setBootReady] =
+    useState(false);
 
-  const [bootError, setBootError] = useState<string | null>(
-    null,
-  );
+  const [showSplash, setShowSplash] =
+    useState(true);
+
+  const [bootError, setBootError] =
+    useState<string | null>(null);
 
   useEffect(() => {
-    const subscription = subscribePushResponses();
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    const subscription =
+      subscribePushResponses();
 
     return () => {
       subscription.remove();
@@ -59,9 +72,17 @@ export default function App() {
     try {
       await ensureSingleUserSession();
 
-      void registerPush().catch(() => undefined);
+      if (Platform.OS !== 'web') {
+        void registerPush().catch(
+          () => undefined,
+        );
+      }
     } catch (error) {
-      setBootError((error as Error).message);
+      setBootError(
+        error instanceof Error
+          ? error.message
+          : 'Bilinmeyen bir hata oluştu.',
+      );
     } finally {
       setBootReady(true);
     }
@@ -70,7 +91,9 @@ export default function App() {
   if (showSplash) {
     return (
       <StartupSplash
-        onDone={() => setShowSplash(false)}
+        onDone={() =>
+          setShowSplash(false)
+        }
       />
     );
   }
@@ -78,7 +101,9 @@ export default function App() {
   if (!bootReady) {
     return (
       <PinkBackground>
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView
+          style={styles.safeArea}
+        >
           <StatusBar style="dark" />
           <Loading />
         </SafeAreaView>
@@ -89,10 +114,14 @@ export default function App() {
   if (bootError) {
     return (
       <PinkBackground>
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView
+          style={styles.safeArea}
+        >
           <StatusBar style="dark" />
 
-          <View style={styles.errorContainer}>
+          <View
+            style={styles.errorContainer}
+          >
             <Image
               source={require('./assets/logo.png')}
               resizeMode="contain"
@@ -104,17 +133,25 @@ export default function App() {
                 Minik bir sorun oldu 🌸
               </Text>
 
-              <Text style={styles.errorDescription}>
+              <Text
+                style={
+                  styles.errorDescription
+                }
+              >
                 HeadsUp sunucuya ulaşamadı.
               </Text>
 
-              <Text style={styles.errorMessage}>
+              <Text
+                style={styles.errorMessage}
+              >
                 {bootError}
               </Text>
 
               <Text
                 style={styles.retry}
-                onPress={() => void bootstrap()}
+                onPress={() =>
+                  void bootstrap()
+                }
               >
                 Tekrar dene ♡
               </Text>
@@ -127,21 +164,31 @@ export default function App() {
 
   return (
     <PinkBackground>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={styles.safeArea}
+      >
         <StatusBar style="dark" />
 
         <View style={styles.content}>
-          {tab === 'feed' && <FeedScreen />}
+          {tab === 'feed' && (
+            <FeedScreen />
+          )}
 
           {tab === 'add' && (
             <AddWatchScreen
-              onAdded={() => setTab('watches')}
+              onAdded={() =>
+                setTab('watches')
+              }
             />
           )}
 
-          {tab === 'watches' && <WatchesScreen />}
+          {tab === 'watches' && (
+            <WatchesScreen />
+          )}
 
-          {tab === 'settings' && <SettingsScreen />}
+          {tab === 'settings' && (
+            <SettingsScreen />
+          )}
         </View>
 
         <BottomTabs

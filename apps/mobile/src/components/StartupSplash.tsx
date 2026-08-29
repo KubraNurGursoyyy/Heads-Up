@@ -10,8 +10,6 @@ import {
   View,
 } from 'react-native';
 
-import * as SplashScreen from 'expo-splash-screen';
-
 type Props = {
   onDone: () => void;
 };
@@ -27,10 +25,14 @@ export default function StartupSplash({
     new Animated.Value(1.03),
   ).current;
 
-  const handled = useRef(false);
+  const onDoneRef = useRef(onDone);
 
   useEffect(() => {
-    Animated.parallel([
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
+  useEffect(() => {
+    const animation = Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
         duration: 180,
@@ -43,31 +45,25 @@ export default function StartupSplash({
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start();
-  }, [opacity, scale]);
+    ]);
 
-  async function handleLoaded() {
-    if (handled.current) {
-      return;
-    }
+    animation.start();
 
-    handled.current = true;
-
-    await SplashScreen.hideAsync().catch(
-      () => undefined,
-    );
-
-    setTimeout(() => {
-      onDone();
+    const timer = setTimeout(() => {
+      onDoneRef.current();
     }, 500);
-  }
+
+    return () => {
+      clearTimeout(timer);
+      animation.stop();
+    };
+  }, [opacity, scale]);
 
   return (
     <View style={styles.root}>
       <Animated.Image
         source={require('../../assets/splash.png')}
         resizeMode="cover"
-        onLoadEnd={() => void handleLoaded()}
         style={[
           StyleSheet.absoluteFill,
           {

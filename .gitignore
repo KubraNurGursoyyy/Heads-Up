@@ -1,28 +1,38 @@
+# Monorepo root is not an Expo app
+/app.json
+/android/
+
+# Dependencies
 node_modules/
+
+# Environment / secrets
 .env
 .env.*
 !.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build output
 dist/
+build/
 .expo/
-coverage/
+.vercel/
+.wrangler/
+.gradle/
+.cxx/
+**/android/app/build/
+**/android/build/
+
+# Local Android configuration
+**/android/local.properties
+
+# Logs / OS / IDE
 *.log
-apps/mobile/android/
-apps/mobile/ios/
-
-# Local credentials and signing material
-.npmrc
-*.pem
-*.key
-*.p12
-*.pfx
-*.jks
-*.keystore
-credentials.json
-service-account*.json
-google-service-account*.json
-
-# Local IDE / OS files
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
+# TypeScript incremental state
+*.tsbuildinfo
