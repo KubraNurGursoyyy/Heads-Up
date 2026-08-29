@@ -1,4 +1,6 @@
-const easProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID || undefined;
+const easProjectId =
+  process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+  'f3666043-3ebe-4394-bbb8-8e277c0449c2';
 
 module.exports = {
   expo: {
@@ -56,7 +58,9 @@ module.exports = {
     ],
 
     extra: {
-      eas: easProjectId ? { projectId: easProjectId } : {},
+      eas: {
+        projectId: easProjectId,
+      },
     },
   },
 };
