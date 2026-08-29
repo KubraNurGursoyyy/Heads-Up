@@ -21,7 +21,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
   async schedule() {
     const watches = await this.p.watch.findMany({ where: { active: true }, select: { id: true } });
     for (const w of watches) {
-      try { await this.q.enqueueWatch(w.id); } catch (e) { this.logger.warn(String(e)); }
+      try { await this.q.enqueueWatch(w.id, false, true); } catch (e) { this.logger.warn(String(e)); }
     }
     if (watches.length) this.logger.log(`queued ${watches.length} active watches`);
   }

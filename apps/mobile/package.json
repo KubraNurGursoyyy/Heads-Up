@@ -5,9 +5,11 @@
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "prebuild": "expo prebuild",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "start:web": "expo start --web",
+    "export:web": "expo export --platform web --output-dir dist-web-test"
   },
   "dependencies": {
     "expo": "~57.0.17",
@@ -20,7 +22,9 @@
     "expo-splash-screen": "~57.0.8",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",

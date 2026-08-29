@@ -1,12 +1,15 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
-export class RegisterDto {
-  @IsEmail() email!: string;
-  @IsString() @MinLength(8) password!: string;
+import {
+  IsString,
+  MinLength,
+} from 'class-validator';
+
+export class BootstrapDto {
+  @IsString()
+  @MinLength(32)
+  accessKey!: string;
 }
-export class LoginDto {
-  @IsEmail() email!: string;
-  @IsString() password!: string;
-}
+
 export class RefreshDto {
-  @IsString() refreshToken!: string;
+  @IsString()
+  refreshToken!: string;
 }

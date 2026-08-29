@@ -4,7 +4,20 @@ export type NotificationMode =
   | 'SELECTED_EVENTS'
   | 'OFF';
 
-export type Category = 'GAME' | 'BOOK' | 'MOVIE_TV' | 'TECHNOLOGY' | 'GENERAL';
+export type Category = string;
+
+export type WatchCategory = {
+  name: string;
+  count: number;
+};
+
+export type WatchSuggestion = {
+  originalPrompt: string;
+  correctedPrompt: string;
+  changed: boolean;
+  topic: string;
+  category: string;
+};
 
 export type Watch = {
   id: string;
@@ -14,7 +27,7 @@ export type Watch = {
   category: Category;
   notificationMode: NotificationMode;
   active: boolean;
-  lastCheckedAt?: string;
+  lastCheckedAt?: string | null;
   _count?: { watchArticles: number };
 };
 
@@ -33,6 +46,7 @@ export type FeedItem = {
     description?: string;
     canonicalUrl: string;
     sourceName?: string;
+    imageUrl?: string;
     publishedAt?: string;
   };
   watch: {
@@ -41,4 +55,24 @@ export type FeedItem = {
     category: Category;
     notificationMode: NotificationMode;
   };
+};
+
+export type ArchiveResponse = {
+  items: FeedItem[];
+  page: number;
+  pageSize: 3;
+  total: number;
+  totalPages: number;
+};
+
+export type RunWatchResult = {
+  queued?: boolean;
+  completed?: boolean;
+  skipped?: boolean;
+  reason?: string;
+  message?: string;
+  discovered?: number;
+  attached?: number;
+  pushed?: number;
+  historical?: boolean;
 };

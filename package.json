@@ -14,7 +14,15 @@
     "build:api": "npm --workspace @headsup/api run build",
     "prisma:generate": "npm --workspace @headsup/api run prisma:generate",
     "prisma:migrate": "npm --workspace @headsup/api run prisma:migrate",
-    "prisma:deploy": "npm --workspace @headsup/api run prisma:deploy"
+    "prisma:deploy": "npm --workspace @headsup/api run prisma:deploy",
+    "dev:usb": "powershell -ExecutionPolicy Bypass -File ./dev-usb.ps1",
+    "validate": "node scripts/validate-project.mjs",
+    "test:unit": "node --experimental-strip-types --test apps/api/src/common/text-normalization.test.mjs apps/api/src/articles/archive-pagination.test.mjs apps/api/src/sources/search-plan.test.mjs apps/api/src/sources/book-search.test.mjs apps/api/src/sources/rss-image.test.mjs apps/mobile/src/utils/watch-ui.test.mjs apps/mobile/src/utils/feed-topics.test.mjs",
+    "test:api": "npm run prisma:generate && npm run build:api",
+    "test:mobile": "npm --workspace @headsup/mobile run check",
+    "test": "npm run validate && npm run test:unit && npm run test:api && npm run test:mobile && npm run test:web",
+    "dev:web": "npm --workspace @headsup/mobile run start:web",
+    "test:web": "npm --workspace @headsup/mobile run export:web"
   },
   "engines": {
     "node": ">=22.13.0"

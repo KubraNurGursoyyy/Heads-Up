@@ -7,14 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Category {
-  GAME
-  BOOK
-  MOVIE_TV
-  TECHNOLOGY
-  GENERAL
-}
-
 enum NotificationMode {
   IMPORTANT_ONLY
   ALL_RELEVANT
@@ -71,7 +63,7 @@ model Watch {
   prompt              String
   topic               String
   intent              String
-  category            Category
+  category            String
   aliases             Json
   searchQueries       Json
   notifyEvents        Json
@@ -95,6 +87,7 @@ model Article {
   description  String?
   sourceName   String?
   sourceType   String
+  imageUrl     String?
   publishedAt  DateTime?
   discoveredAt DateTime @default(now())
   watchArticles WatchArticle[]

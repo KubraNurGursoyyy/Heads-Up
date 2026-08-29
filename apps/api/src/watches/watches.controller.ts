@@ -2,13 +2,48 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@n
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser, JwtUser } from '../auth/current-user.decorator';
 import { WatchesService } from './watches.service';
-import { CreateWatchDto, UpdateWatchDto } from './watches.dto';
-@Controller('watches') @UseGuards(AuthGuard)
+import { CreateWatchDto, SuggestWatchDto, UpdateWatchDto } from './watches.dto';
+
+@Controller('watches')
+@UseGuards(AuthGuard)
 export class WatchesController {
-  constructor(private watches: WatchesService) {}
-  @Get() list(@CurrentUser() u: JwtUser){ return this.watches.list(u.sub); }
-  @Post() create(@CurrentUser() u:JwtUser,@Body() d:CreateWatchDto){ return this.watches.create(u.sub,d.prompt,d.notificationMode); }
-  @Patch(':id') update(@CurrentUser() u:JwtUser,@Param('id') id:string,@Body() d:UpdateWatchDto){ return this.watches.update(u.sub,id,d); }
-  @Delete(':id') remove(@CurrentUser() u:JwtUser,@Param('id') id:string){ return this.watches.remove(u.sub,id); }
-  @Post(':id/run') run(@CurrentUser() u:JwtUser,@Param('id') id:string){ return this.watches.runNow(u.sub,id); }
+  constructor(private readonly watches: WatchesService) {}
+
+  @Get()
+  list(@CurrentUser() user: JwtUser) {
+    return this.watches.list(user.sub);
+  }
+
+  @Get('categories')
+  categories(@CurrentUser() user: JwtUser) {
+    return this.watches.listCategories(user.sub);
+  }
+
+  @Post('suggest')
+  suggest(@Body() dto: SuggestWatchDto) {
+    return this.watches.suggest(dto.prompt);
+  }
+
+  @Post()
+  create(@CurrentUser() user: JwtUser, @Body() dto: CreateWatchDto) {
+    return this.watches.create(user.sub, dto.prompt, dto.notificationMode, {
+      topic: dto.topicHint,
+      category: dto.categoryHint,
+    });
+  }
+
+  @Patch(':id')
+  update(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() dto: UpdateWatchDto) {
+    return this.watches.update(user.sub, id, dto);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.watches.remove(user.sub, id);
+  }
+
+  @Post(':id/run')
+  run(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.watches.runNow(user.sub, id);
+  }
 }
