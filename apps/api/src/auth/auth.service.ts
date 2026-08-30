@@ -1,18 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-
 import { JwtService } from '@nestjs/jwt';
-
-import { PrismaService } from '../prisma/prisma.service';
-
-import * as bcrypt from 'bcryptjs';
-
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwt: JwtService,
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
   ) {}
 
   async bootstrap(accessKey: string) {
@@ -32,10 +27,7 @@ export class AuthService {
       user = await this.prisma.user.create({
         data: {
           email: 'single-user@headsup.local',
-
-          passwordHash: await bcrypt.hash(randomBytes(48).toString('base64url'), 12),
         },
-
         select: {
           id: true,
           email: true,
@@ -53,7 +45,6 @@ export class AuthService {
       where: {
         tokenHash,
       },
-
       include: {
         user: true,
       },
@@ -67,7 +58,6 @@ export class AuthService {
       where: {
         id: stored.id,
       },
-
       data: {
         revokedAt: new Date(),
       },
@@ -80,18 +70,21 @@ export class AuthService {
     const expected = process.env.HEADSUP_SINGLE_USER_KEY;
 
     if (!expected || expected.length < 32) {
-      throw new Error('HEADSUP_SINGLE_USER_KEY en az 32 karakter olacak şekilde tanımlanmalı.');
+      throw new Error(
+        'HEADSUP_SINGLE_USER_KEY en az 32 karakter olacak şekilde tanımlanmalı.',
+      );
     }
 
     const receivedBuffer = Buffer.from(received);
-
     const expectedBuffer = Buffer.from(expected);
 
     if (
       receivedBuffer.length !== expectedBuffer.length ||
       !timingSafeEqual(receivedBuffer, expectedBuffer)
     ) {
-      throw new UnauthorizedException('Geçersiz HeadsUp erişim anahtarı.');
+      throw new UnauthorizedException(
+        'Geçersiz HeadsUp erişim anahtarı.',
+      );
     }
   }
 
@@ -120,10 +113,10 @@ export class AuthService {
     await this.prisma.refreshToken.create({
       data: {
         userId,
-
         tokenHash: this.hash(refreshToken),
-
-        expiresAt: new Date(Date.now() + days * 86400000),
+        expiresAt: new Date(
+          Date.now() + days * 24 * 60 * 60 * 1000,
+        ),
       },
     });
 
@@ -132,7 +125,6 @@ export class AuthService {
         id: userId,
         email,
       },
-
       accessToken,
       refreshToken,
     };
