@@ -18,7 +18,9 @@ export type OpenLibraryDoc = {
 };
 
 function normalize(value: string | null | undefined) {
-  return String(value ?? '').trim().replace(/\s+/g, ' ');
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 function fold(value: string | null | undefined) {
@@ -52,7 +54,9 @@ export function isBookTracking(input: BookSearchInput) {
   if (category === 'kitap' || category === 'book') return true;
 
   const hay = fold([input.topic, input.prompt, ...(input.aliases ?? [])].join(' '));
-  return /\b(kitap|book|roman|yazar|author|yayinevi|publisher|isbn|baski|edition|ceviri|translation)\b/.test(hay);
+  return /\b(kitap|book|roman|yazar|author|yayinevi|publisher|isbn|baski|edition|ceviri|translation)\b/.test(
+    hay,
+  );
 }
 
 export function wantsTurkishEdition(input: BookSearchInput) {
@@ -67,8 +71,14 @@ export function cleanBookQuery(input: BookSearchInput) {
 
   const source = candidates[0] ?? '';
   const cleaned = source
-    .replace(/\b(türkçe|turkce|turkish)\s+(çeviri(si)?|ceviri(si)?|baskı(sı)?|baski(si)?|edition|translation)\b/giu, ' ')
-    .replace(/\b(çeviri(si)?|ceviri(si)?|baskı(sı)?|baski(si)?|edition|translation|yayınlanınca|yayinlaninca|çıktığında|ciktiginda|çıkınca|cikinca|haber ver|bildir|takip et)\b/giu, ' ')
+    .replace(
+      /\b(türkçe|turkce|turkish)\s+(çeviri(si)?|ceviri(si)?|baskı(sı)?|baski(si)?|edition|translation)\b/giu,
+      ' ',
+    )
+    .replace(
+      /\b(çeviri(si)?|ceviri(si)?|baskı(sı)?|baski(si)?|edition|translation|yayınlanınca|yayinlaninca|çıktığında|ciktiginda|çıkınca|cikinca|haber ver|bildir|takip et)\b/giu,
+      ' ',
+    )
     .replace(/\s+/g, ' ')
     .trim();
 

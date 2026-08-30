@@ -82,11 +82,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        danger
-          ? styles.dangerButton
-          : secondary
-            ? styles.secondaryButton
-            : styles.primaryButton,
+        danger ? styles.dangerButton : secondary ? styles.secondaryButton : styles.primaryButton,
         pressed && !disabled && styles.pressed,
         disabled && styles.disabled,
         style,

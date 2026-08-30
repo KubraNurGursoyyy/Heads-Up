@@ -20,8 +20,12 @@ export default function FilterChip({ label, selected, onPress, compact = false }
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.marker, compact && styles.markerCompact, selected && styles.markerSelected]} />
-      <Text style={[styles.text, compact && styles.textCompact, selected && styles.selectedText]}>{label}</Text>
+      <View
+        style={[styles.marker, compact && styles.markerCompact, selected && styles.markerSelected]}
+      />
+      <Text style={[styles.text, compact && styles.textCompact, selected && styles.selectedText]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }

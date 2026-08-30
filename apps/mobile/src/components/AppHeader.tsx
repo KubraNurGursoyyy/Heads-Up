@@ -24,11 +24,7 @@ export default function AppHeader({
         onPress={onLogoPress}
         style={({ pressed }) => [styles.logoButton, pressed && onLogoPress && styles.logoPressed]}
       >
-        <Image
-          source={require('../../assets/logo.png')}
-          resizeMode="contain"
-          style={styles.logo}
-        />
+        <Image source={require('../../assets/logo.png')} resizeMode="contain" style={styles.logo} />
       </Pressable>
 
       <View style={styles.textArea}>

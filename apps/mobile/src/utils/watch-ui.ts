@@ -54,7 +54,10 @@ export function normalizeApiBaseUrl(value: string): string {
   return cleaned.replace(/\/api$/i, '');
 }
 
-export function isWatchPreparing(watch: { active: boolean; lastCheckedAt?: string | null }): boolean {
+export function isWatchPreparing(watch: {
+  active: boolean;
+  lastCheckedAt?: string | null;
+}): boolean {
   return watch.active && !watch.lastCheckedAt;
 }
 
@@ -66,7 +69,10 @@ export function applyWatchUpdate<T extends Pick<Watch, 'id'>>(items: T[], update
   return items.map(item => (item.id === updated.id ? updated : item));
 }
 
-export function effectiveCategory(manualCategory: string | null, suggestedCategory?: string | null): string | null {
+export function effectiveCategory(
+  manualCategory: string | null,
+  suggestedCategory?: string | null,
+): string | null {
   const manual = normalizeInput(manualCategory ?? '');
   if (manual) return manual;
   const suggested = normalizeInput(suggestedCategory ?? '');

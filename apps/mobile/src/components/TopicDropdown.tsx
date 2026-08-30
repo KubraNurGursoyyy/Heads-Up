@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, fontFamily, fontFamilyMedium } from '../ui';
 import HighlightedTopic from './HighlightedTopic';
 
@@ -39,16 +33,20 @@ export default function TopicDropdown({
   }
 
   return (
-<View style={[styles.root, compact && styles.rootCompact]}>
+    <View style={[styles.root, compact && styles.rootCompact]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen(current => !current)}
-        style={({ pressed }) => [styles.trigger, compact && styles.triggerCompact, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.trigger,
+          compact && styles.triggerCompact,
+          pressed && styles.pressed,
+        ]}
       >
         <View style={styles.triggerTextArea}>
-{compact ? null : <Text style={styles.triggerMeta}>HABERLERİ FİLTRELE</Text>}
-{selected ? (
+          {compact ? null : <Text style={styles.triggerMeta}>HABERLERİ FİLTRELE</Text>}
+          {selected ? (
             <HighlightedTopic
               text={selected.label}
               requiredTerms={selected.requiredTerms}
@@ -56,7 +54,12 @@ export default function TopicDropdown({
               style={[styles.triggerText, compact && styles.triggerTextCompact]}
             />
           ) : (
-            <Text numberOfLines={1} style={[styles.triggerText, compact && styles.triggerTextCompact]}>{allLabel}</Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.triggerText, compact && styles.triggerTextCompact]}
+            >
+              {allLabel}
+            </Text>
           )}
         </View>
 

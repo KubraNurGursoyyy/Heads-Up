@@ -5,7 +5,12 @@ import Constants from 'expo-constants';
 import { api } from './api';
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }),
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
 });
 
 function openNotificationUrl(notification: Notifications.Notification) {
@@ -16,7 +21,9 @@ function openNotificationUrl(notification: Notifications.Notification) {
 export function subscribePushResponses() {
   const last = Notifications.getLastNotificationResponse();
   if (last?.notification) openNotificationUrl(last.notification);
-  return Notifications.addNotificationResponseReceivedListener(response => openNotificationUrl(response.notification));
+  return Notifications.addNotificationResponseReceivedListener(response =>
+    openNotificationUrl(response.notification),
+  );
 }
 
 export async function registerPush() {
@@ -36,8 +43,14 @@ export async function registerPush() {
   let status = (await Notifications.getPermissionsAsync()).status;
   if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;
   if (status !== 'granted') return;
-  const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID || Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
+  const projectId =
+    process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+    Constants.expoConfig?.extra?.eas?.projectId ||
+    Constants.easConfig?.projectId;
   if (!projectId) return;
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  await api('/devices', { method: 'POST', body: JSON.stringify({ expoPushToken: token, deviceName: Device.modelName || 'Android' }) });
+  await api('/devices', {
+    method: 'POST',
+    body: JSON.stringify({ expoPushToken: token, deviceName: Device.modelName || 'Android' }),
+  });
 }

@@ -10,7 +10,11 @@ import {
   normalizeWhitespace,
   sameTextInsensitive,
 } from '../common/text-normalization';
-import { keepRequiredTermsPresentInText, normalizeRequiredTerms, requiredTermsKey } from '../common/required-terms';
+import {
+  keepRequiredTermsPresentInText,
+  normalizeRequiredTerms,
+  requiredTermsKey,
+} from '../common/required-terms';
 
 @Injectable()
 export class WatchesService {
@@ -32,7 +36,10 @@ export class WatchesService {
   }
 
   async listCategories(userId: string) {
-    const watches = await this.prisma.watch.findMany({ where: { userId }, select: { category: true } });
+    const watches = await this.prisma.watch.findMany({
+      where: { userId },
+      select: { category: true },
+    });
     return buildCategoryStats(watches.map(watch => watch.category));
   }
 
@@ -53,7 +60,13 @@ export class WatchesService {
       select: { prompt: true, requiredTerms: true },
     });
 
-    if (existing.some(watch => sameTextInsensitive(watch.prompt, cleanPrompt) && requiredTermsKey(watch.requiredTerms) === requiredTermsKey(requiredTerms))) {
+    if (
+      existing.some(
+        watch =>
+          sameTextInsensitive(watch.prompt, cleanPrompt) &&
+          requiredTermsKey(watch.requiredTerms) === requiredTermsKey(requiredTerms),
+      )
+    ) {
       throw new ConflictException('Bu takip ve kesin kelime seçimi zaten mevcut.');
     }
 
@@ -95,9 +108,10 @@ export class WatchesService {
     const current = await this.assertOwned(userId, id);
     const promptSupplied = data.prompt !== undefined;
     const cleanPrompt = promptSupplied ? normalizeWhitespace(data.prompt!) : current.prompt;
-    const requiredTerms = data.requiredTerms !== undefined
-      ? keepRequiredTermsPresentInText(data.requiredTerms, cleanPrompt)
-      : normalizeRequiredTerms(current.requiredTerms);
+    const requiredTerms =
+      data.requiredTerms !== undefined
+        ? keepRequiredTermsPresentInText(data.requiredTerms, cleanPrompt)
+        : normalizeRequiredTerms(current.requiredTerms);
     const matchingChanged = promptSupplied || data.requiredTerms !== undefined;
     const parsed = promptSupplied ? this.ai.buildQuickWatch(cleanPrompt) : null;
 
@@ -106,7 +120,13 @@ export class WatchesService {
         where: { userId, NOT: { id } },
         select: { prompt: true, requiredTerms: true },
       });
-      if (others.some(watch => sameTextInsensitive(watch.prompt, cleanPrompt) && requiredTermsKey(watch.requiredTerms) === requiredTermsKey(requiredTerms))) {
+      if (
+        others.some(
+          watch =>
+            sameTextInsensitive(watch.prompt, cleanPrompt) &&
+            requiredTermsKey(watch.requiredTerms) === requiredTermsKey(requiredTerms),
+        )
+      ) {
         throw new ConflictException('Bu takip ve kesin kelime seçimi zaten mevcut.');
       }
     }
@@ -154,7 +174,12 @@ export class WatchesService {
 
   async runNow(userId: string, id: string) {
     const watch = await this.assertOwned(userId, id);
-    if (!watch.active) return { skipped: true, reason: 'paused', message: 'Takip duraklatılmış. Önce devam ettirip tekrar tara.' };
+    if (!watch.active)
+      return {
+        skipped: true,
+        reason: 'paused',
+        message: 'Takip duraklatılmış. Önce devam ettirip tekrar tara.',
+      };
     const result = await this.pipeline.processWatch(id, { historical: true });
     return { queued: false, completed: true, ...result };
   }

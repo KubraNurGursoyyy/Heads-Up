@@ -51,9 +51,7 @@ function urlFromMediaValue(value: unknown): string | undefined {
 function imageFromHtml(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value.includes('<')) return undefined;
 
-  const match = value.match(
-    /<img\b[^>]*?(?:src|data-src)=["']([^"']+)["'][^>]*>/i,
-  );
+  const match = value.match(/<img\b[^>]*?(?:src|data-src)=["']([^"']+)["'][^>]*>/i);
 
   if (!match?.[1]) return undefined;
   const url = decodeHtml(match[1]);

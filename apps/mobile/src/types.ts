@@ -1,8 +1,4 @@
-export type NotificationMode =
-  | 'IMPORTANT_ONLY'
-  | 'ALL_RELEVANT'
-  | 'SELECTED_EVENTS'
-  | 'OFF';
+export type NotificationMode = 'IMPORTANT_ONLY' | 'ALL_RELEVANT' | 'SELECTED_EVENTS' | 'OFF';
 
 export type Category = string;
 

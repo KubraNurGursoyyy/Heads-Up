@@ -1,10 +1,9 @@
 export default {
-  async scheduled(event, env, ctx) {
+  async scheduled(_event, env, ctx) {
     const baseUrl = env.API_URL.replace(/\/$/, '');
-    const path = event.cron === '0 * * * *' ? '/internal/policy-check' : '/internal/scan';
 
     ctx.waitUntil(
-      fetch(`${baseUrl}${path}`, {
+      fetch(`${baseUrl}/internal/scan`, {
         method: 'POST',
         headers: {
           'X-HeadsUp-Cron-Secret': env.HEADSUP_CRON_SECRET,
@@ -12,7 +11,10 @@ export default {
       }).then(async response => {
         if (!response.ok) {
           const body = await response.text();
-          throw new Error(`${path} failed: ${response.status} ${body}`);
+
+          throw new Error(
+            `/internal/scan failed: ${response.status} ${body}`,
+          );
         }
       }),
     );

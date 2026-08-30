@@ -57,14 +57,17 @@ export default function CategoryPickerModal({
             showsVerticalScrollIndicator={false}
           >
             {options.map(option => {
-              const selected = option.toLocaleLowerCase('tr-TR') === current?.toLocaleLowerCase('tr-TR');
+              const selected =
+                option.toLocaleLowerCase('tr-TR') === current?.toLocaleLowerCase('tr-TR');
               return (
                 <Pressable
                   key={option}
                   onPress={() => choose(option)}
                   style={[styles.option, selected && styles.optionSelected]}
                 >
-                  <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{option}</Text>
+                  <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
+                    {option}
+                  </Text>
                   <View style={[styles.optionLine, selected && styles.optionLineSelected]} />
                 </Pressable>
               );

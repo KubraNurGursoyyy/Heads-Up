@@ -110,8 +110,12 @@ export default function App() {
             <ArchiveScreen onHome={goHome} />
           ) : (
             <>
-              {tab === 'feed' && <FeedScreen onOpenArchive={() => setArchiveOpen(true)} onHome={goHome} />}
-              {tab === 'add' && <AddWatchScreen onAdded={() => setTab('watches')} onHome={goHome} />}
+              {tab === 'feed' && (
+                <FeedScreen onOpenArchive={() => setArchiveOpen(true)} onHome={goHome} />
+              )}
+              {tab === 'add' && (
+                <AddWatchScreen onAdded={() => setTab('watches')} onHome={goHome} />
+              )}
               {tab === 'watches' && <WatchesScreen onHome={goHome} />}
               {tab === 'settings' && <SettingsScreen onHome={goHome} />}
             </>
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
-    paddingTop: Platform.OS === 'android' ? NativeStatusBar.currentHeight ?? 0 : 0,
+    paddingTop: Platform.OS === 'android' ? (NativeStatusBar.currentHeight ?? 0) : 0,
   },
   content: {
     flex: 1,

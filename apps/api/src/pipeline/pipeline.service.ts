@@ -27,11 +27,7 @@ export class PipelineService {
     if (!watch || !watch.active) return { skipped: true };
 
     const historical = options.historical ?? !watch.lastCheckedAt;
-    const queries = [
-      ...((watch.searchQueries as string[]) ?? []),
-      watch.topic,
-      watch.prompt,
-    ];
+    const queries = [...((watch.searchQueries as string[]) ?? []), watch.topic, watch.prompt];
 
     const discovered = await this.sources.discover(queries, {
       topic: watch.topic,
@@ -104,11 +100,7 @@ export class PipelineService {
       const analysis = await this.ai.analyzeArticle(watch, article);
       if (!analysis.relevant || analysis.relevanceScore < 0.35) continue;
 
-      const eventKey = this.normalizeEventKey(
-        analysis.eventKey,
-        analysis.eventType,
-        article.title,
-      );
+      const eventKey = this.normalizeEventKey(analysis.eventKey, analysis.eventType, article.title);
 
       await this.prisma.watchArticle.create({
         data: {
@@ -175,29 +167,19 @@ export class PipelineService {
     return base || 'update';
   }
 
-  private shouldPush(
-    watch: Watch,
-    importance: number,
-    isNew: boolean,
-    eventType: string,
-  ) {
+  private shouldPush(watch: Watch, importance: number, isNew: boolean, eventType: string) {
     if (watch.notificationMode === NotificationMode.OFF) return false;
     if (watch.notificationMode === NotificationMode.ALL_RELEVANT) return true;
     if (watch.notificationMode === NotificationMode.IMPORTANT_ONLY) {
       return isNew && importance >= watch.importanceThreshold;
     }
 
-    const events = ((watch.notifyEvents as string[]) ?? []).map(value =>
-      value.toLowerCase(),
-    );
+    const events = ((watch.notifyEvents as string[]) ?? []).map(value => value.toLowerCase());
     const normalizedEvent = eventType.toLowerCase();
 
     return (
       isNew &&
-      events.some(
-        value =>
-          normalizedEvent.includes(value) || value.includes(normalizedEvent),
-      )
+      events.some(value => normalizedEvent.includes(value) || value.includes(normalizedEvent))
     );
   }
 

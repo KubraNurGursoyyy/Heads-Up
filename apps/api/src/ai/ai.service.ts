@@ -46,7 +46,10 @@ type GeminiGenerateResponse = {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private geminiUnavailableUntil = 0;
-  private readonly suggestionCache = new Map<string, { expiresAt: number; value: WatchSuggestion }>();
+  private readonly suggestionCache = new Map<
+    string,
+    { expiresAt: number; value: WatchSuggestion }
+  >();
 
   async suggestWatch(prompt: string): Promise<WatchSuggestion> {
     const originalPrompt = normalizeWhitespace(prompt);
@@ -91,7 +94,9 @@ export class AiService {
           category: fallbackCategory !== 'Diğer' ? fallbackCategory : aiCategory,
         };
       } catch (error) {
-        this.logger.warn(`Gemini watch suggestion unavailable; local fallback used: ${String(error)}`);
+        this.logger.warn(
+          `Gemini watch suggestion unavailable; local fallback used: ${String(error)}`,
+        );
         suggestion = this.fallbackSuggest(originalPrompt);
       }
     }
@@ -118,12 +123,8 @@ export class AiService {
 
     return {
       ...fallback,
-      topic: hints?.topic
-        ? normalizeWhitespace(hints.topic).slice(0, 120)
-        : fallback.topic,
-      category: hints?.category
-        ? normalizeCategoryName(hints.category)
-        : fallback.category,
+      topic: hints?.topic ? normalizeWhitespace(hints.topic).slice(0, 120) : fallback.topic,
+      category: hints?.category ? normalizeCategoryName(hints.category) : fallback.category,
     };
   }
 
@@ -162,7 +163,9 @@ export class AiService {
         notifyEvents: result.notifyEvents.map(normalizeWhitespace).filter(Boolean).slice(0, 8),
       };
     } catch (error) {
-      this.logger.warn(`Gemini watch interpretation unavailable; local fallback used: ${String(error)}`);
+      this.logger.warn(
+        `Gemini watch interpretation unavailable; local fallback used: ${String(error)}`,
+      );
       return this.fallbackInterpret(cleanPrompt);
     }
   }
@@ -215,7 +218,9 @@ export class AiService {
         },
       );
     } catch (error) {
-      this.logger.warn(`Gemini article analysis unavailable; local fallback used: ${String(error)}`);
+      this.logger.warn(
+        `Gemini article analysis unavailable; local fallback used: ${String(error)}`,
+      );
       return this.fallbackAnalyze(watch, article);
     }
   }
@@ -253,13 +258,18 @@ export class AiService {
       const body = (await response.text()).slice(0, 500);
       if (response.status === 429) {
         this.geminiUnavailableUntil = Date.now() + 10 * 60 * 1000;
-        throw new Error('Gemini free-tier quota/rate limit reached (429); using local fallback temporarily');
+        throw new Error(
+          'Gemini free-tier quota/rate limit reached (429); using local fallback temporarily',
+        );
       }
       throw new Error(`Gemini ${response.status}: ${body}`);
     }
 
     const data = (await response.json()) as GeminiGenerateResponse;
-    const text = data.candidates?.[0]?.content?.parts?.map(part => part.text ?? '').join('').trim();
+    const text = data.candidates?.[0]?.content?.parts
+      ?.map(part => part.text ?? '')
+      .join('')
+      .trim();
     if (!text) throw new Error('Gemini response did not contain text');
 
     return JSON.parse(text) as T;
@@ -284,18 +294,23 @@ export class AiService {
     const lower = p.toLocaleLowerCase('tr-TR');
     const category = inferFallbackCategory(p);
 
-    const topic = p
-      .replace(/\b(takip et|haber ver|bildir|çıktığında|çıkınca|olursa)\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 120) || p.slice(0, 120);
+    const topic =
+      p
+        .replace(/\b(takip et|haber ver|bildir|çıktığında|çıkınca|olursa)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 120) || p.slice(0, 120);
 
     return {
       topic,
       intent: p,
       category,
-      aliases: [topic, topic.toLocaleLowerCase('tr-TR')].filter((value, index, all) => all.indexOf(value) === index),
-      searchQueries: [p, topic, lower].filter((value, index, all) => value && all.indexOf(value) === index).slice(0, 5),
+      aliases: [topic, topic.toLocaleLowerCase('tr-TR')].filter(
+        (value, index, all) => all.indexOf(value) === index,
+      ),
+      searchQueries: [p, topic, lower]
+        .filter((value, index, all) => value && all.indexOf(value) === index)
+        .slice(0, 5),
       notifyEvents: ['announcement', 'release_date', 'release', 'delay', 'availability'],
     };
   }
@@ -331,7 +346,10 @@ export class AiService {
       'confirmed',
       'resmi',
     ];
-    const importanceScore = Math.min(1, 0.35 + importantWords.filter(word => hay.includes(word)).length * 0.18);
+    const importanceScore = Math.min(
+      1,
+      0.35 + importantWords.filter(word => hay.includes(word)).length * 0.18,
+    );
     const relevant = relevanceScore >= 0.35;
     const key =
       article.title
