@@ -63,7 +63,12 @@ function FloatingAurora({
     return () => animation.stop();
   }, [distance, duration, enabled, translateX, translateY]);
 
-  return <Animated.View pointerEvents="none" style={[style, { transform: [{ translateX }, { translateY }] }]} />;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[style, { transform: [{ translateX }, { translateY }] }]}
+    />
+  );
 }
 
 function GoldShimmerLine({
@@ -143,19 +148,59 @@ export default function PinkBackground({ children }: Props) {
 
   return (
     <View style={styles.root}>
-      <FloatingAurora style={styles.auroraOne} duration={9000} distance={20} enabled={animationsEnabled} />
-      <FloatingAurora style={styles.auroraTwo} duration={12000} distance={26} enabled={animationsEnabled} />
-      <FloatingAurora style={styles.auroraThree} duration={10500} distance={16} enabled={animationsEnabled} />
-      <FloatingAurora style={styles.auroraFour} duration={14000} distance={21} enabled={animationsEnabled} />
+      <FloatingAurora
+        style={styles.auroraOne}
+        duration={9000}
+        distance={20}
+        enabled={animationsEnabled}
+      />
+      <FloatingAurora
+        style={styles.auroraTwo}
+        duration={12000}
+        distance={26}
+        enabled={animationsEnabled}
+      />
+      <FloatingAurora
+        style={styles.auroraThree}
+        duration={10500}
+        distance={16}
+        enabled={animationsEnabled}
+      />
+      <FloatingAurora
+        style={styles.auroraFour}
+        duration={14000}
+        distance={21}
+        enabled={animationsEnabled}
+      />
 
       <View pointerEvents="none" style={styles.frameTop} />
       <View pointerEvents="none" style={styles.frameRight} />
       <View pointerEvents="none" style={styles.frameLeft} />
 
-      <GoldShimmerLine style={styles.goldOne} delay={0} enabled={animationsEnabled} rotate="-13deg" />
-      <GoldShimmerLine style={styles.goldTwo} delay={450} enabled={animationsEnabled} rotate="-13deg" />
-      <GoldShimmerLine style={styles.goldThree} delay={900} enabled={animationsEnabled} rotate="16deg" />
-      <GoldShimmerLine style={styles.goldFour} delay={1350} enabled={animationsEnabled} rotate="16deg" />
+      <GoldShimmerLine
+        style={styles.goldOne}
+        delay={0}
+        enabled={animationsEnabled}
+        rotate="-13deg"
+      />
+      <GoldShimmerLine
+        style={styles.goldTwo}
+        delay={450}
+        enabled={animationsEnabled}
+        rotate="-13deg"
+      />
+      <GoldShimmerLine
+        style={styles.goldThree}
+        delay={900}
+        enabled={animationsEnabled}
+        rotate="16deg"
+      />
+      <GoldShimmerLine
+        style={styles.goldFour}
+        delay={1350}
+        enabled={animationsEnabled}
+        rotate="16deg"
+      />
 
       <View pointerEvents="none" style={styles.magentaStroke} />
       <View pointerEvents="none" style={styles.violetStroke} />

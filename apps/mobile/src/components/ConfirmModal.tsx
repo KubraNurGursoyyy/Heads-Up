@@ -42,7 +42,11 @@ export default function ConfirmModal({
             <Pressable
               onPress={onConfirm}
               disabled={busy}
-              style={({ pressed }) => [styles.confirmButton, pressed && styles.pressed, busy && styles.disabled]}
+              style={({ pressed }) => [
+                styles.confirmButton,
+                pressed && styles.pressed,
+                busy && styles.disabled,
+              ]}
             >
               <Text style={styles.confirmText}>{busy ? 'Siliniyor...' : confirmLabel}</Text>
             </Pressable>

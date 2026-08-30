@@ -6,8 +6,16 @@ import { NotificationsService } from '../notifications/notifications.service';
 type PolicySource = { service: string; url: string; label: string };
 
 const POLICY_SOURCES: PolicySource[] = [
-  { service: 'gemini-api', label: 'Gemini API', url: 'https://ai.google.dev/gemini-api/docs/pricing' },
-  { service: 'expo-push', label: 'Expo Push Notifications', url: 'https://docs.expo.dev/push-notifications/faq/' },
+  {
+    service: 'gemini-api',
+    label: 'Gemini API',
+    url: 'https://ai.google.dev/gemini-api/docs/pricing',
+  },
+  {
+    service: 'expo-push',
+    label: 'Expo Push Notifications',
+    url: 'https://docs.expo.dev/push-notifications/faq/',
+  },
 ];
 
 @Injectable()
@@ -21,7 +29,12 @@ export class SystemPolicyService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (process.env.HEADSUP_WORKER === '1' || process.env.HEADSUP_SERVERLESS === '1' || process.env.VERCEL) return;
+    if (
+      process.env.HEADSUP_WORKER === '1' ||
+      process.env.HEADSUP_SERVERLESS === '1' ||
+      process.env.VERCEL
+    )
+      return;
     if ((process.env.POLICY_MONITOR_ENABLED ?? 'true').toLowerCase() !== 'true') return;
 
     const minutes = Math.max(60, Number(process.env.POLICY_MONITOR_MINUTES ?? 60));
@@ -50,7 +63,18 @@ export class SystemPolicyService implements OnModuleInit, OnModuleDestroy {
   }
 
   private pricingExcerpt(text: string) {
-    const patterns = [/free tier/gi, /free/gi, /pricing/gi, /price/gi, /billing/gi, /paid/gi, /cost/gi, /quota/gi, /rate limit/gi, /charge/gi];
+    const patterns = [
+      /free tier/gi,
+      /free/gi,
+      /pricing/gi,
+      /price/gi,
+      /billing/gi,
+      /paid/gi,
+      /cost/gi,
+      /quota/gi,
+      /rate limit/gi,
+      /charge/gi,
+    ];
     const pieces = new Set<string>();
     for (const pattern of patterns) {
       for (const match of text.matchAll(pattern)) {
@@ -87,18 +111,29 @@ export class SystemPolicyService implements OnModuleInit, OnModuleDestroy {
     const normalized = this.normalize(await response.text());
     const excerpt = this.pricingExcerpt(normalized);
     const fingerprint = this.hash(excerpt.toLowerCase());
-    const previous = await this.prisma.policySnapshot.findUnique({ where: { service: source.service } });
+    const previous = await this.prisma.policySnapshot.findUnique({
+      where: { service: source.service },
+    });
 
     if (!previous) {
       await this.prisma.policySnapshot.create({
-        data: { service: source.service, url: source.url, fingerprint, excerpt, checkedAt: new Date() },
+        data: {
+          service: source.service,
+          url: source.url,
+          fingerprint,
+          excerpt,
+          checkedAt: new Date(),
+        },
       });
       this.logger.log(`${source.service}: policy baseline saved`);
       return;
     }
 
     if (previous.fingerprint === fingerprint) {
-      await this.prisma.policySnapshot.update({ where: { service: source.service }, data: { checkedAt: new Date() } });
+      await this.prisma.policySnapshot.update({
+        where: { service: source.service },
+        data: { checkedAt: new Date() },
+      });
       return;
     }
 

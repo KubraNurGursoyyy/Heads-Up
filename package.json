@@ -7,6 +7,8 @@
     "apps/mobile"
   ],
   "scripts": {
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "install:all": "npm install",
     "dev:api": "npm --workspace @headsup/api run start:dev",
     "dev:worker": "npm --workspace @headsup/api run worker:dev",
@@ -28,5 +30,8 @@
   },
   "engines": {
     "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6"
   }
 }

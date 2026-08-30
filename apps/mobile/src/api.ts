@@ -1,19 +1,14 @@
 import { normalizeApiBaseUrl } from './utils/watch-ui';
 import { Platform } from 'react-native';
 
-const BASE = normalizeApiBaseUrl(
-  process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000',
-);
+const BASE = normalizeApiBaseUrl(process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000');
 
-const SINGLE_USER_KEY =
-  process.env.EXPO_PUBLIC_HEADSUP_SINGLE_USER_KEY || '';
+const SINGLE_USER_KEY = process.env.EXPO_PUBLIC_HEADSUP_SINGLE_USER_KEY || '';
 
 const ACCESS = 'headsup_access';
 const REFRESH = 'headsup_refresh';
 
-async function getStorageItem(
-  key: string,
-): Promise<string | null> {
+async function getStorageItem(key: string): Promise<string | null> {
   if (Platform.OS === 'web') {
     if (typeof window === 'undefined') {
       return null;
@@ -22,41 +17,26 @@ async function getStorageItem(
     return window.localStorage.getItem(key);
   }
 
-  const SecureStore = await import(
-    'expo-secure-store'
-  );
+  const SecureStore = await import('expo-secure-store');
 
   return SecureStore.getItemAsync(key);
 }
 
-async function setStorageItem(
-  key: string,
-  value: string,
-): Promise<void> {
+async function setStorageItem(key: string, value: string): Promise<void> {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(
-        key,
-        value,
-      );
+      window.localStorage.setItem(key, value);
     }
 
     return;
   }
 
-  const SecureStore = await import(
-    'expo-secure-store'
-  );
+  const SecureStore = await import('expo-secure-store');
 
-  await SecureStore.setItemAsync(
-    key,
-    value,
-  );
+  await SecureStore.setItemAsync(key, value);
 }
 
-async function deleteStorageItem(
-  key: string,
-): Promise<void> {
+async function deleteStorageItem(key: string): Promise<void> {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(key);
@@ -65,68 +45,45 @@ async function deleteStorageItem(
     return;
   }
 
-  const SecureStore = await import(
-    'expo-secure-store'
-  );
+  const SecureStore = await import('expo-secure-store');
 
   await SecureStore.deleteItemAsync(key);
 }
 
-export async function saveSession(
-  session: {
-    accessToken: string;
-    refreshToken: string;
-  },
-) {
+export async function saveSession(session: { accessToken: string; refreshToken: string }) {
   await Promise.all([
-    setStorageItem(
-      ACCESS,
-      session.accessToken,
-    ),
+    setStorageItem(ACCESS, session.accessToken),
 
-    setStorageItem(
-      REFRESH,
-      session.refreshToken,
-    ),
+    setStorageItem(REFRESH, session.refreshToken),
   ]);
 }
 
 export async function clearSession() {
-  await Promise.all([
-    deleteStorageItem(ACCESS),
-    deleteStorageItem(REFRESH),
-  ]);
+  await Promise.all([deleteStorageItem(ACCESS), deleteStorageItem(REFRESH)]);
 }
 
 export async function hasSession() {
-  return Boolean(
-    await getStorageItem(REFRESH),
-  );
+  return Boolean(await getStorageItem(REFRESH));
 }
 
 async function refresh() {
-  const refreshToken =
-    await getStorageItem(REFRESH);
+  const refreshToken = await getStorageItem(REFRESH);
 
   if (!refreshToken) {
     return false;
   }
 
-  const response = await fetch(
-    `${BASE}/auth/refresh`,
-    {
-      method: 'POST',
+  const response = await fetch(`${BASE}/auth/refresh`, {
+    method: 'POST',
 
-      headers: {
-        'Content-Type':
-          'application/json',
-      },
-
-      body: JSON.stringify({
-        refreshToken,
-      }),
+    headers: {
+      'Content-Type': 'application/json',
     },
-  );
+
+    body: JSON.stringify({
+      refreshToken,
+    }),
+  });
 
   if (!response.ok) {
     await clearSession();
@@ -134,78 +91,47 @@ async function refresh() {
     return false;
   }
 
-  const session =
-    await response.json();
+  const session = await response.json();
 
   await saveSession(session);
 
   return true;
 }
 
-export async function api<T = any>(
-  path: string,
-  init: RequestInit = {},
-  retry = true,
-): Promise<T> {
-  const token =
-    await getStorageItem(ACCESS);
+export async function api<T = any>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+  const token = await getStorageItem(ACCESS);
 
-  const headers: Record<
-    string,
-    string
-  > = {
-    'Content-Type':
-      'application/json',
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
 
-    ...(init.headers as
-      | Record<string, string>
-      | undefined),
+    ...(init.headers as Record<string, string> | undefined),
   };
 
   if (token) {
-    headers.Authorization =
-      `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(
-    `${BASE}${path}`,
-    {
-      ...init,
-      headers,
-    },
-  );
+  const response = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers,
+  });
 
-  if (
-    response.status === 401 &&
-    retry &&
-    (await refresh())
-  ) {
-    return api<T>(
-      path,
-      init,
-      false,
-    );
+  if (response.status === 401 && retry && (await refresh())) {
+    return api<T>(path, init, false);
   }
 
   if (!response.ok) {
-    let message =
-      `HTTP ${response.status}`;
+    let message = `HTTP ${response.status}`;
 
     try {
-      const body =
-        await response.json();
+      const body = await response.json();
 
-      message =
-        Array.isArray(body.message)
-          ? body.message.join('\n')
-          : body.message || message;
+      message = Array.isArray(body.message) ? body.message.join('\n') : body.message || message;
     } catch {
       // Response JSON değilse status mesajını kullan.
     }
 
-    throw new Error(
-      String(message),
-    );
+    throw new Error(String(message));
   }
 
   if (response.status === 204) {
@@ -217,9 +143,7 @@ export async function api<T = any>(
 
 async function bootstrapSingleUser() {
   if (!SINGLE_USER_KEY) {
-    throw new Error(
-      'EXPO_PUBLIC_HEADSUP_SINGLE_USER_KEY tanımlı değil.',
-    );
+    throw new Error('EXPO_PUBLIC_HEADSUP_SINGLE_USER_KEY tanımlı değil.');
   }
 
   const session = await api<{
@@ -231,8 +155,7 @@ async function bootstrapSingleUser() {
       method: 'POST',
 
       body: JSON.stringify({
-        accessKey:
-          SINGLE_USER_KEY,
+        accessKey: SINGLE_USER_KEY,
       }),
     },
     false,

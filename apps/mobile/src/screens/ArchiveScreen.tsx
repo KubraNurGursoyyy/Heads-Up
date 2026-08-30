@@ -56,14 +56,30 @@ export default function ArchiveScreen({ onHome }: Props) {
 
         <Divider />
         <SectionLabel>Kategori filtresi</SectionLabel>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          <FilterChip label="Tümü" selected={!category} onPress={() => { setCategory(null); setPage(1); }} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chips}
+        >
+          <FilterChip
+            label="Tümü"
+            selected={!category}
+            onPress={() => {
+              setCategory(null);
+              setPage(1);
+            }}
+          />
           {categories.map(item => (
             <FilterChip
               key={item.name}
               label={item.name}
-              selected={category?.toLocaleLowerCase('tr-TR') === item.name.toLocaleLowerCase('tr-TR')}
-              onPress={() => { setCategory(item.name); setPage(1); }}
+              selected={
+                category?.toLocaleLowerCase('tr-TR') === item.name.toLocaleLowerCase('tr-TR')
+              }
+              onPress={() => {
+                setCategory(item.name);
+                setPage(1);
+              }}
             />
           ))}
         </ScrollView>
@@ -79,7 +95,9 @@ export default function ArchiveScreen({ onHome }: Props) {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item, index }) => <FeedCard item={item} index={((data?.page ?? 1) - 1) * 3 + index} />}
+          renderItem={({ item, index }) => (
+            <FeedCard item={item} index={((data?.page ?? 1) - 1) * 3 + index} />
+          )}
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyLine} />
@@ -99,7 +117,9 @@ export default function ArchiveScreen({ onHome }: Props) {
 
               <View style={styles.pageCounter}>
                 <Text style={styles.pageCounterTop}>SAYFA</Text>
-                <Text style={styles.pageCounterText}>{data?.page ?? 1} / {data?.totalPages ?? 1}</Text>
+                <Text style={styles.pageCounterText}>
+                  {data?.page ?? 1} / {data?.totalPages ?? 1}
+                </Text>
                 <View style={styles.pageCounterLine} />
               </View>
 
@@ -124,9 +144,20 @@ export default function ArchiveScreen({ onHome }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 10 },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 13, alignSelf: 'flex-start' },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 13,
+    alignSelf: 'flex-start',
+  },
   backLine: { width: 24, height: 2, backgroundColor: colors.gold },
-  backText: { fontFamily: fontFamilyMedium, color: colors.lightText, fontSize: 11, fontWeight: '800' },
+  backText: {
+    fontFamily: fontFamilyMedium,
+    color: colors.lightText,
+    fontSize: 11,
+    fontWeight: '800',
+  },
   chips: { gap: 7, paddingTop: 9, paddingRight: 16 },
   list: { paddingHorizontal: 18, paddingBottom: 26 },
   error: { marginHorizontal: 18, color: colors.danger, fontFamily, fontSize: 11 },
@@ -165,9 +196,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#681044',
   },
   pageButtonDisabled: { opacity: 0.35 },
-  pageButtonText: { fontFamily: fontFamilyMedium, color: colors.lightText, fontSize: 11, fontWeight: '800' },
+  pageButtonText: {
+    fontFamily: fontFamilyMedium,
+    color: colors.lightText,
+    fontSize: 11,
+    fontWeight: '800',
+  },
   pageCounter: { alignItems: 'center' },
-  pageCounterTop: { fontFamily, color: colors.goldSoft, fontSize: 8, fontWeight: '800', letterSpacing: 1.2 },
-  pageCounterText: { fontFamily: fontFamilyMedium, color: colors.lightText, fontSize: 12, fontWeight: '800', marginTop: 2 },
+  pageCounterTop: {
+    fontFamily,
+    color: colors.goldSoft,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  pageCounterText: {
+    fontFamily: fontFamilyMedium,
+    color: colors.lightText,
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 2,
+  },
   pageCounterLine: { width: 26, height: 2, backgroundColor: colors.hotPink, marginTop: 5 },
 });

@@ -17,11 +17,7 @@ export class QueueService implements OnModuleDestroy {
     }
   }
 
-  async enqueueWatch(
-    watchId: string,
-    force = false,
-    allowInlineServerless = false,
-  ) {
+  async enqueueWatch(watchId: string, force = false, allowInlineServerless = false) {
     if (this.isServerless()) {
       if (allowInlineServerless) {
         return this.pipeline.processWatch(watchId);

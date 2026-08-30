@@ -17,12 +17,7 @@ import {
 } from '../utils/watch-ui';
 import type { NotificationMode, RunWatchResult, Watch, WatchCategory } from '../types';
 
-const modes: NotificationMode[] = [
-  'IMPORTANT_ONLY',
-  'ALL_RELEVANT',
-  'SELECTED_EVENTS',
-  'OFF',
-];
+const modes: NotificationMode[] = ['IMPORTANT_ONLY', 'ALL_RELEVANT', 'SELECTED_EVENTS', 'OFF'];
 
 function modeLabel(mode: NotificationMode) {
   const labels: Record<NotificationMode, string> = {
@@ -76,7 +71,9 @@ export default function WatchesScreen({ onHome }: { onHome?: () => void }) {
 
   async function patch(
     watch: Watch,
-    body: Partial<Pick<Watch, 'active' | 'notificationMode' | 'category' | 'prompt' | 'requiredTerms'>>,
+    body: Partial<
+      Pick<Watch, 'active' | 'notificationMode' | 'category' | 'prompt' | 'requiredTerms'>
+    >,
   ) {
     try {
       setError(null);
@@ -182,7 +179,11 @@ export default function WatchesScreen({ onHome }: { onHome?: () => void }) {
 
                 <View style={styles.titleRow}>
                   <View style={styles.titleArea}>
-                    <HighlightedTopic text={item.topic} requiredTerms={item.requiredTerms} style={styles.title} />
+                    <HighlightedTopic
+                      text={item.topic}
+                      requiredTerms={item.requiredTerms}
+                      style={styles.title}
+                    />
                     <Text style={styles.intent}>{item.intent}</Text>
                   </View>
 
@@ -287,12 +288,15 @@ export default function WatchesScreen({ onHome }: { onHome?: () => void }) {
       <ConfirmModal
         visible={Boolean(deleteTarget)}
         title="Takibi sil"
-        message={deleteTarget ? `“${deleteTarget.topic}” takibi ve bu takibe bağlı kayıtlar silinsin mi?` : ''}
+        message={
+          deleteTarget
+            ? `“${deleteTarget.topic}” takibi ve bu takibe bağlı kayıtlar silinsin mi?`
+            : ''
+        }
         busy={deleting}
         onCancel={() => !deleting && setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
       />
-
 
       <EditWatchModal
         watch={editTarget}

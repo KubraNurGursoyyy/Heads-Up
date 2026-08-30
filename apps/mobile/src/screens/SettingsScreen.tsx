@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api';
-import {
-  colors,
-  Divider,
-  fontFamily,
-  SectionLabel,
-} from '../ui';
+import { colors, Divider, fontFamily, SectionLabel } from '../ui';
 import AppHeader from '../components/AppHeader';
 import {
   DEFAULT_SETTINGS,
@@ -55,7 +50,9 @@ export default function SettingsScreen({ onHome }: { onHome?: () => void }) {
       setConnectionMessage('');
       const result = await api<{ ok: boolean; service?: string }>('/health');
       setConnection(result.ok ? 'ok' : 'error');
-      setConnectionMessage(result.ok ? 'API bağlantısı sağlıklı.' : 'API yanıt verdi ancak sağlık durumu başarısız.');
+      setConnectionMessage(
+        result.ok ? 'API bağlantısı sağlıklı.' : 'API yanıt verdi ancak sağlık durumu başarısız.',
+      );
     } catch (error) {
       setConnection('error');
       setConnectionMessage((error as Error).message);
@@ -63,10 +60,7 @@ export default function SettingsScreen({ onHome }: { onHome?: () => void }) {
   }
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.root}
-    >
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.root}>
       <AppHeader
         title="Ayarlar"
         subtitle="Varsayılan davranışları değiştir. Bu seçimler cihazda saklanır ve sonraki ekran açılışlarında uygulanır."
@@ -158,8 +152,15 @@ export default function SettingsScreen({ onHome }: { onHome?: () => void }) {
         </Pressable>
 
         {connection !== 'idle' && connection !== 'checking' ? (
-          <View style={[styles.connectionResult, connection === 'error' && styles.connectionResultError]}>
-            <View style={[styles.connectionDot, connection === 'error' && styles.connectionDotError]} />
+          <View
+            style={[
+              styles.connectionResult,
+              connection === 'error' && styles.connectionResultError,
+            ]}
+          >
+            <View
+              style={[styles.connectionDot, connection === 'error' && styles.connectionDotError]}
+            />
             <Text style={styles.connectionText}>{connectionMessage}</Text>
           </View>
         ) : null}
@@ -170,7 +171,8 @@ export default function SettingsScreen({ onHome }: { onHome?: () => void }) {
         <View style={styles.archiveInfoCopy}>
           <Text style={styles.archiveInfoTitle}>Haber arşivi</Text>
           <Text style={styles.archiveInfoText}>
-            Ana ekran son 12 kaydı gösterir. Bunların hepsi yeni olmak zorunda değildir; daha eski kayıtlar 3'erli arşiv sayfalarında tutulur.
+            Ana ekran son 12 kaydı gösterir. Bunların hepsi yeni olmak zorunda değildir; daha eski
+            kayıtlar 3'erli arşiv sayfalarında tutulur.
           </Text>
         </View>
       </View>
@@ -188,10 +190,7 @@ function Choice({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.choice, selected && styles.choiceSelected]}
-    >
+    <Pressable onPress={onPress} style={[styles.choice, selected && styles.choiceSelected]}>
       <View style={[styles.choiceLine, selected && styles.choiceLineSelected]} />
       <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text>
     </Pressable>
@@ -237,7 +236,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   savedLine: { width: 22, height: 2, backgroundColor: colors.gold },
-  savedText: { fontFamily, color: colors.magenta, fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
+  savedText: {
+    fontFamily,
+    color: colors.magenta,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+  },
   panel: {
     marginTop: 9,
     padding: 17,
@@ -296,7 +301,13 @@ const styles = StyleSheet.create({
   },
   toggleCopy: { flex: 1 },
   toggleTitle: { fontFamily, color: colors.ink, fontSize: 13, fontWeight: '800' },
-  toggleDescription: { fontFamily, color: colors.inkSoft, fontSize: 10, lineHeight: 15, marginTop: 3 },
+  toggleDescription: {
+    fontFamily,
+    color: colors.inkSoft,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 3,
+  },
   rowDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: 15 },
   switchTrack: {
     width: 42,
@@ -324,7 +335,13 @@ const styles = StyleSheet.create({
     borderColor: '#722552',
   },
   systemAccent: { width: 44, height: 2, backgroundColor: colors.gold, marginBottom: 13 },
-  systemKicker: { fontFamily, color: '#E7B7D0', fontSize: 9, fontWeight: '800', letterSpacing: 1.4 },
+  systemKicker: {
+    fontFamily,
+    color: '#E7B7D0',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+  },
   systemTitle: { fontFamily, color: colors.white, fontSize: 17, fontWeight: '800', marginTop: 6 },
   systemDescription: { fontFamily, color: '#D9B1C6', fontSize: 11, lineHeight: 17, marginTop: 5 },
   testButton: {
@@ -368,6 +385,12 @@ const styles = StyleSheet.create({
   archiveInfoLine: { width: 3, backgroundColor: colors.gold, borderRadius: 2 },
   archiveInfoCopy: { flex: 1 },
   archiveInfoTitle: { fontFamily, color: colors.ink, fontSize: 12, fontWeight: '800' },
-  archiveInfoText: { fontFamily, color: colors.inkSoft, fontSize: 10, lineHeight: 15, marginTop: 3 },
+  archiveInfoText: {
+    fontFamily,
+    color: colors.inkSoft,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 3,
+  },
   pressed: { opacity: 0.84 },
 });

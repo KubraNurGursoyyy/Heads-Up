@@ -110,14 +110,25 @@ export function normalizeCategoryName(value: string | null | undefined): string 
 export function inferFallbackCategory(prompt: string): string {
   const value = foldForComparison(prompt);
 
-  if (/\b(oyun[a-z0-9]*|game[a-z0-9]*|gaming|steam|playstation|xbox|nintendo|ps5|pc|gta(?:\s*[0-9]+)?|grand theft auto|rockstar(?: games)?|elden ring|witcher|zelda|pokemon|final fantasy|resident evil|silent hill|assassin s creed|call of duty|battlefield|minecraft|fortnite|valorant|league of legends)\b/.test(value)) return 'Oyun';
+  if (
+    /\b(oyun[a-z0-9]*|game[a-z0-9]*|gaming|steam|playstation|xbox|nintendo|ps5|pc|gta(?:\s*[0-9]+)?|grand theft auto|rockstar(?: games)?|elden ring|witcher|zelda|pokemon|final fantasy|resident evil|silent hill|assassin s creed|call of duty|battlefield|minecraft|fortnite|valorant|league of legends)\b/.test(
+      value,
+    )
+  )
+    return 'Oyun';
   if (/\b(kitap|roman|baski|yayinevi|yazar|ceviri)\b/.test(value)) return 'Kitap';
   if (/\b(film|dizi|sezon|vizyon|sinema|netflix|disney|hbo)\b/.test(value)) return 'Film & Dizi';
-  if (/\b(telefon|islemci|yazilim|surum|android|iphone|apple|samsung|teknoloji|ai|yapay zeka)\b/.test(value)) return 'Teknoloji';
+  if (
+    /\b(telefon|islemci|yazilim|surum|android|iphone|apple|samsung|teknoloji|ai|yapay zeka)\b/.test(
+      value,
+    )
+  )
+    return 'Teknoloji';
   if (/\b(muzik|album|sarki|konser|turne|spotify|sanatci)\b/.test(value)) return 'Müzik';
   if (/\b(futbol|basketbol|tenis|voleybol|mac|lig|spor|formula|f1)\b/.test(value)) return 'Spor';
   if (/\b(bilim|uzay|nasa|arastirma|makale|kesif)\b/.test(value)) return 'Bilim';
-  if (/\b(finans|borsa|hisse|dolar|euro|ekonomi|faiz|kripto)\b/.test(value)) return 'Finans & Ekonomi';
+  if (/\b(finans|borsa|hisse|dolar|euro|ekonomi|faiz|kripto)\b/.test(value))
+    return 'Finans & Ekonomi';
   if (/\b(seyahat|ucus|otel|vize|tatil|gezi)\b/.test(value)) return 'Seyahat';
   if (/\b(moda|giyim|koleksiyon|defile)\b/.test(value)) return 'Moda';
   if (/\b(araba|otomobil|otomotiv|tesla|motor)\b/.test(value)) return 'Otomotiv';

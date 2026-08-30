@@ -23,7 +23,9 @@ export default function RequiredTermsPicker({ text, selected, onChange, compact 
       </Text>
       <View style={[styles.words, compact && styles.wordsCompact]}>
         {words.map(word => {
-          const active = selected.some(term => term.localeCompare(word, 'tr', { sensitivity: 'base' }) === 0);
+          const active = selected.some(
+            term => term.localeCompare(word, 'tr', { sensitivity: 'base' }) === 0,
+          );
           return (
             <Pressable
               key={word}

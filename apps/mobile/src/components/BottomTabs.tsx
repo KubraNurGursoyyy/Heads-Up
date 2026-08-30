@@ -27,7 +27,11 @@ export default function BottomTabs({ active, onChange }: Props) {
             <Pressable
               key={tab.value}
               onPress={() => onChange(tab.value)}
-              style={({ pressed }) => [styles.tab, selected && styles.tabActive, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.tab,
+                selected && styles.tabActive,
+                pressed && styles.pressed,
+              ]}
             >
               <Text style={[styles.index, selected && styles.indexActive]}>{tab.short}</Text>
               <Text style={[styles.label, selected && styles.labelActive]}>{tab.label}</Text>

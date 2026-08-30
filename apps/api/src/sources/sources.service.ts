@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Parser from 'rss-parser';
-import {
-  buildGoogleNewsSearchPlan,
-  type SearchRequest,
-} from './search-plan';
+import { buildGoogleNewsSearchPlan, type SearchRequest } from './search-plan';
 import {
   buildBookNewsQueries,
   buildOpenLibraryQueries,
@@ -46,10 +43,7 @@ export class SourcesService {
   private readonly parser = new Parser();
   private readonly logger = new Logger(SourcesService.name);
 
-  async discover(
-    queries: string[],
-    options: DiscoverOptions = {},
-  ): Promise<DiscoveredArticle[]> {
+  async discover(queries: string[], options: DiscoverOptions = {}): Promise<DiscoveredArticle[]> {
     const normalLimit = Math.max(1, Number(process.env.WATCH_SEARCH_RESULT_LIMIT ?? 12));
     const historicalLimit = Math.max(
       normalLimit,
@@ -123,10 +117,7 @@ export class SourcesService {
       .slice(0, resultLimit);
   }
 
-  private async runGoogleNewsPlan(
-    plan: SearchRequest[],
-    discovered: DiscoveredArticle[],
-  ) {
+  private async runGoogleNewsPlan(plan: SearchRequest[], discovered: DiscoveredArticle[]) {
     for (let index = 0; index < plan.length; index += 4) {
       const batch = plan.slice(index, index + 4);
       const groups = await Promise.all(batch.map(request => this.googleNews(request)));
@@ -146,7 +137,10 @@ export class SourcesService {
           return {
             title: parsedTitle.title,
             url: String(item.link ?? '').trim(),
-            description: this.stripHtml(String(item.contentSnippet ?? item.content ?? '')).slice(0, 1200),
+            description: this.stripHtml(String(item.contentSnippet ?? item.content ?? '')).slice(
+              0,
+              1200,
+            ),
             sourceName: parsedTitle.source ?? 'Google News',
             sourceType: `google_news_rss_${request.lang}`,
             imageUrl: extractRssImage(item),
@@ -164,14 +158,12 @@ export class SourcesService {
     }
   }
 
-  private async openLibraryCatalog(
-    input: {
-      topic?: string;
-      prompt?: string;
-      category?: string;
-      aliases?: string[];
-    },
-  ): Promise<DiscoveredArticle[]> {
+  private async openLibraryCatalog(input: {
+    topic?: string;
+    prompt?: string;
+    category?: string;
+    aliases?: string[];
+  }): Promise<DiscoveredArticle[]> {
     const queries = buildOpenLibraryQueries(input);
     if (!queries.length) return [];
 
@@ -182,7 +174,8 @@ export class SourcesService {
       try {
         const params = new URLSearchParams({
           q: query,
-          fields: 'key,title,author_name,first_publish_year,publish_year,language,isbn,publisher,cover_i',
+          fields:
+            'key,title,author_name,first_publish_year,publish_year,language,isbn,publisher,cover_i',
           limit: '8',
         });
 
@@ -268,7 +261,10 @@ export class SourcesService {
   }
 
   private stripHtml(value: string) {
-    return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return value
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private titleKey(value: string) {

@@ -16,10 +16,7 @@ export class ArticlesService {
   feed(userId: string, filter?: string, category?: string, watchId?: string) {
     return this.prisma.watchArticle.findMany({
       where: this.buildWhere(userId, filter, category, watchId),
-      orderBy: [
-        { article: { publishedAt: 'desc' } },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ article: { publishedAt: 'desc' } }, { createdAt: 'desc' }],
       take: LIVE_FEED_SIZE,
       include: this.includeRelations(),
     });
@@ -36,10 +33,7 @@ export class ArticlesService {
     const items = total
       ? await this.prisma.watchArticle.findMany({
           where,
-          orderBy: [
-            { article: { publishedAt: 'desc' } },
-            { createdAt: 'desc' },
-          ],
+          orderBy: [{ article: { publishedAt: 'desc' } }, { createdAt: 'desc' }],
           skip: archiveSkip(safePage),
           take: ARCHIVE_PAGE_SIZE,
           include: this.includeRelations(),
@@ -68,12 +62,7 @@ export class ArticlesService {
     });
   }
 
-  private buildWhere(
-    userId: string,
-    filter?: string,
-    category?: string,
-    watchId?: string,
-  ) {
+  private buildWhere(userId: string, filter?: string, category?: string, watchId?: string) {
     return {
       watch: {
         userId,
@@ -87,9 +76,7 @@ export class ArticlesService {
           : {}),
         ...(watchId ? { id: watchId } : {}),
       },
-      ...(filter === 'important'
-        ? { importanceScore: { gte: 0.72 }, isNewInformation: true }
-        : {}),
+      ...(filter === 'important' ? { importanceScore: { gte: 0.72 }, isNewInformation: true } : {}),
       ...(filter === 'unread' ? { readAt: null } : {}),
     };
   }

@@ -7,12 +7,7 @@ import { WatchesController } from './watches.controller';
 import { WatchesService } from './watches.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    AiModule,
-    PipelineModule,
-    forwardRef(() => JobsModule),
-  ],
+  imports: [AuthModule, AiModule, PipelineModule, forwardRef(() => JobsModule)],
   controllers: [WatchesController],
   providers: [WatchesService],
   exports: [WatchesService],

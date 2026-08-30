@@ -25,12 +25,7 @@ export class ArticlesController {
     @Query('category') category?: string,
     @Query('watchId') watchId?: string,
   ) {
-    return this.articles.archive(
-      user.sub,
-      page,
-      category?.trim() || undefined,
-      watchId,
-    );
+    return this.articles.archive(user.sub, page, category?.trim() || undefined, watchId);
   }
 
   @Patch(':id/read')

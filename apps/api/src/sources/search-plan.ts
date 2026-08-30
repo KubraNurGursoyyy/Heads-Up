@@ -19,11 +19,22 @@ export type SearchRequest = {
   query: string;
   lang: string;
   country: string;
-  reason: 'base' | 'exact' | 'tail' | 'category' | 'official' | 'recent' | 'history' | 'book' | 'required';
+  reason:
+    | 'base'
+    | 'exact'
+    | 'tail'
+    | 'category'
+    | 'official'
+    | 'recent'
+    | 'history'
+    | 'book'
+    | 'required';
 };
 
 function normalize(value: string | null | undefined) {
-  return String(value ?? '').trim().replace(/\s+/g, ' ');
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 function unique(values: Array<string | null | undefined>) {
@@ -71,7 +82,7 @@ function categoryTerm(category: string | undefined, lang: string) {
     otomotiv: 'automotive',
   };
 
-  return lang === 'en' ? en[key] ?? 'news' : normalize(category) || 'haber';
+  return lang === 'en' ? (en[key] ?? 'news') : normalize(category) || 'haber';
 }
 
 function locales(primary?: NewsLocale) {
@@ -90,7 +101,6 @@ function locales(primary?: NewsLocale) {
     return true;
   });
 }
-
 
 function accentFold(value: string) {
   return normalize(value)
@@ -129,11 +139,7 @@ export function buildGoogleNewsSearchPlan(input: SearchPlanInput): SearchRequest
   const seen = new Set<string>();
   const required = requiredQueries(input.requiredTerms);
 
-  const push = (
-    query: string,
-    locale: NewsLocale,
-    reason: SearchRequest['reason'],
-  ) => {
+  const push = (query: string, locale: NewsLocale, reason: SearchRequest['reason']) => {
     const normalizedQuery = normalize(query);
     if (!normalizedQuery) return;
 
