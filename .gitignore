@@ -34,7 +34,6 @@ service-account*.json
 
 # Build output
 dist/
-dist/
 **/dist/
 build/
 **/build/

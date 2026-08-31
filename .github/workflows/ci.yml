@@ -41,3 +41,6 @@ jobs:
 
       - name: Web export check
         run: npm run test:web
+
+      - name: Public demo web export check
+        run: npm run demo:export

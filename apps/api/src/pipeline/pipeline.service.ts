@@ -1,132 +1,69 @@
-import { createHash } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
-import { NotificationMode, Watch } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { SourcesService } from '../sources/sources.service';
-import { AiService } from '../ai/ai.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { ArticleAnalyzerService } from '../ai/article-analyzer.service';
 import { articleContainsRequiredTerms, normalizeRequiredTerms } from '../common/required-terms';
+import { NotificationsService } from '../notifications/notifications.service';
+import { SourcesService } from '../sources/sources.service';
+import { NotificationPolicyService } from './notification-policy.service';
+import { PipelineRepository } from './pipeline.repository';
+import type { ProcessWatchOptions, ProcessWatchResult } from './pipeline.types';
 
-export type ProcessWatchOptions = {
-  historical?: boolean;
-};
+export type { ProcessWatchOptions, ProcessWatchResult } from './pipeline.types';
 
 @Injectable()
 export class PipelineService {
   private readonly logger = new Logger(PipelineService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly repository: PipelineRepository,
     private readonly sources: SourcesService,
-    private readonly ai: AiService,
+    private readonly analyzer: ArticleAnalyzerService,
+    private readonly notificationPolicy: NotificationPolicyService,
     private readonly notifications: NotificationsService,
   ) {}
 
-  async processWatch(watchId: string, options: ProcessWatchOptions = {}) {
-    const watch = await this.prisma.watch.findUnique({ where: { id: watchId } });
-    if (!watch || !watch.active) return { skipped: true };
+  async processWatch(
+    watchId: string,
+    options: ProcessWatchOptions = {},
+  ): Promise<ProcessWatchResult> {
+    const watch = await this.repository.findActiveWatch(watchId);
+    if (!watch) return { skipped: true };
 
     const historical = options.historical ?? !watch.lastCheckedAt;
-    const queries = [...((watch.searchQueries as string[]) ?? []), watch.topic, watch.prompt];
-
-    const discovered = await this.sources.discover(queries, {
-      topic: watch.topic,
-      prompt: watch.prompt,
-      category: watch.category,
-      aliases: (watch.aliases as string[]) ?? [],
-      requiredTerms: normalizeRequiredTerms(watch.requiredTerms),
-      historical,
-    });
+    const discovered = await this.sources.discover(
+      [...((watch.searchQueries as string[]) ?? []), watch.topic, watch.prompt],
+      {
+        topic: watch.topic,
+        prompt: watch.prompt,
+        category: watch.category,
+        aliases: (watch.aliases as string[]) ?? [],
+        requiredTerms: normalizeRequiredTerms(watch.requiredTerms),
+        historical,
+      },
+    );
 
     let attached = 0;
     let pushed = 0;
 
-    for (const discoveredArticle of discovered) {
-      if (
-        !articleContainsRequiredTerms(
-          watch.requiredTerms,
-          discoveredArticle.title,
-          discoveredArticle.description,
-        )
-      ) {
+    for (const candidate of discovered) {
+      if (!this.matchesRequiredTerms(watch.requiredTerms, candidate.title, candidate.description)) {
         continue;
       }
 
-      const url = discoveredArticle.url;
-      const fingerprint = createHash('sha256')
-        .update(`${discoveredArticle.title}|${discoveredArticle.description ?? ''}|${url}`)
-        .digest('hex');
+      const article = await this.repository.upsertArticle(candidate);
+      if (await this.repository.isAttached(watch.id, article.id)) continue;
 
-      const article = await this.prisma.article
-        .upsert({
-          where: { canonicalUrl: url },
-          update: {
-            title: discoveredArticle.title,
-            description: discoveredArticle.description,
-            sourceName: discoveredArticle.sourceName,
-            sourceType: discoveredArticle.sourceType,
-            imageUrl: discoveredArticle.imageUrl,
-            publishedAt: discoveredArticle.publishedAt,
-          },
-          create: {
-            canonicalUrl: url,
-            fingerprint,
-            title: discoveredArticle.title,
-            description: discoveredArticle.description,
-            sourceName: discoveredArticle.sourceName,
-            sourceType: discoveredArticle.sourceType,
-            imageUrl: discoveredArticle.imageUrl,
-            publishedAt: discoveredArticle.publishedAt,
-          },
-        })
-        .catch(async () =>
-          this.prisma.article.findFirstOrThrow({
-            where: {
-              OR: [{ canonicalUrl: url }, { fingerprint }],
-            },
-          }),
-        );
-
-      const exists = await this.prisma.watchArticle.findUnique({
-        where: {
-          watchId_articleId: {
-            watchId,
-            articleId: article.id,
-          },
-        },
-      });
-      if (exists) continue;
-
-      const analysis = await this.ai.analyzeArticle(watch, article);
+      const analysis = await this.analyzer.analyze(watch, article);
       if (!analysis.relevant || analysis.relevanceScore < 0.35) continue;
 
-      const eventKey = this.normalizeEventKey(analysis.eventKey, analysis.eventType, article.title);
-
-      await this.prisma.watchArticle.create({
-        data: {
-          watchId,
-          articleId: article.id,
-          relevanceScore: analysis.relevanceScore,
-          importanceScore: analysis.importanceScore,
-          isNewInformation: analysis.isNewInformation,
-          eventType: analysis.eventType,
-          eventKey,
-          summary: analysis.summary,
-        },
-      });
+      const eventKey = this.notificationPolicy.eventKey(
+        analysis.eventKey,
+        analysis.eventType,
+        article.title,
+      );
+      await this.repository.attachAnalysis(watch.id, article.id, analysis, eventKey);
       attached += 1;
 
-      const oldHistoricalArticle = historical && !this.isRecentEnoughForPush(article.publishedAt);
-
-      if (
-        !oldHistoricalArticle &&
-        this.shouldPush(
-          watch,
-          analysis.importanceScore,
-          analysis.isNewInformation,
-          analysis.eventType,
-        )
-      ) {
+      if (this.notificationPolicy.shouldNotify(watch, analysis, article.publishedAt, historical)) {
         await this.notifications.send(
           watch.userId,
           watch.id,
@@ -140,11 +77,7 @@ export class PipelineService {
       }
     }
 
-    await this.prisma.watch.update({
-      where: { id: watch.id },
-      data: { lastCheckedAt: new Date() },
-    });
-
+    await this.repository.markChecked(watch.id);
     this.logger.log(
       `${watch.topic}: historical=${historical} discovered=${discovered.length} attached=${attached} pushed=${pushed}`,
     );
@@ -157,35 +90,7 @@ export class PipelineService {
     };
   }
 
-  private normalizeEventKey(raw: string, eventType: string, title: string) {
-    const base = (raw || `${eventType}_${title}`)
-      .toLocaleLowerCase('tr-TR')
-      .replace(/[^\p{L}\p{N}]+/gu, '_')
-      .replace(/^_+|_+$/g, '')
-      .slice(0, 180);
-
-    return base || 'update';
-  }
-
-  private shouldPush(watch: Watch, importance: number, isNew: boolean, eventType: string) {
-    if (watch.notificationMode === NotificationMode.OFF) return false;
-    if (watch.notificationMode === NotificationMode.ALL_RELEVANT) return true;
-    if (watch.notificationMode === NotificationMode.IMPORTANT_ONLY) {
-      return isNew && importance >= watch.importanceThreshold;
-    }
-
-    const events = ((watch.notifyEvents as string[]) ?? []).map(value => value.toLowerCase());
-    const normalizedEvent = eventType.toLowerCase();
-
-    return (
-      isNew &&
-      events.some(value => normalizedEvent.includes(value) || value.includes(normalizedEvent))
-    );
-  }
-
-  private isRecentEnoughForPush(publishedAt: Date | null) {
-    if (!publishedAt) return false;
-    const maxAgeMs = 72 * 60 * 60 * 1000;
-    return Date.now() - publishedAt.getTime() <= maxAgeMs;
+  private matchesRequiredTerms(requiredTerms: unknown, title: string, description?: string) {
+    return articleContainsRequiredTerms(requiredTerms, title, description);
   }
 }

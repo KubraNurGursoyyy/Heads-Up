@@ -70,9 +70,7 @@ export class AuthService {
     const expected = process.env.HEADSUP_SINGLE_USER_KEY;
 
     if (!expected || expected.length < 32) {
-      throw new Error(
-        'HEADSUP_SINGLE_USER_KEY en az 32 karakter olacak şekilde tanımlanmalı.',
-      );
+      throw new Error('HEADSUP_SINGLE_USER_KEY en az 32 karakter olacak şekilde tanımlanmalı.');
     }
 
     const receivedBuffer = Buffer.from(received);
@@ -82,9 +80,7 @@ export class AuthService {
       receivedBuffer.length !== expectedBuffer.length ||
       !timingSafeEqual(receivedBuffer, expectedBuffer)
     ) {
-      throw new UnauthorizedException(
-        'Geçersiz HeadsUp erişim anahtarı.',
-      );
+      throw new UnauthorizedException('Geçersiz HeadsUp erişim anahtarı.');
     }
   }
 
@@ -114,9 +110,7 @@ export class AuthService {
       data: {
         userId,
         tokenHash: this.hash(refreshToken),
-        expiresAt: new Date(
-          Date.now() + days * 24 * 60 * 60 * 1000,
-        ),
+        expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
       },
     });
 

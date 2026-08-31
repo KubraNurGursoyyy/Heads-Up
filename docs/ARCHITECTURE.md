@@ -1,8 +1,8 @@
 # Architecture
 
-## Shape
+## Runtime shape
 
-HeadsUp is intentionally a modular monolith plus a separate worker process. This keeps deployment and debugging simple while keeping expensive/background work away from HTTP request handling.
+HeadsUp uses a modular NestJS API and a separate worker process. HTTP request handling stays small while discovery, analysis and notification work can run outside the request lifecycle.
 
 ```text
 Android (Expo/React Native)
@@ -16,40 +16,77 @@ NestJS API ------------------ PostgreSQL
 Redis / BullMQ ---> Worker -------+
                      |  |  |
                      |  |  +--> Expo Push Service
-                     |  +-----> Gemini API (free-tier project)
-                     +--------> Google News RSS
+                     |  +-----> Gemini API
+                     +--------> Discovery sources
 ```
 
-## Main domain records
+## Public demo boundary
 
-- `User`: identity and account settings.
+The public web demo never connects to the personal backend.
+
+```text
+Expo Web UI
+    |
+    v
+ApiClient
+   / \
+  /   \
+RemoteApiClient   DemoApiClient
+     |                  |
+ real API          localStorage
+```
+
+`EXPO_PUBLIC_DEMO_MODE=true` selects `DemoApiClient`. The same screens therefore keep the same UI and request-shaped interaction while demo data remains isolated inside each visitor's browser.
+
+## Domain records
+
+- `User`: account identity.
 - `RefreshToken`: hashed refresh sessions.
 - `Device`: Expo push token per device.
-- `Watch`: user's natural-language request + structured interpretation.
+- `Watch`: natural-language tracking request and structured matching metadata.
 - `Article`: unique discovered source item.
-- `WatchArticle`: relevance/importance analysis of an article for one watch.
-- `Notification`: push decision + delivery status.
+- `WatchArticle`: analysis of an article for one watch.
+- `Notification`: push decision and delivery status.
 
-## Discovery
+## AI responsibilities
 
-`SourcesService` currently uses keyless Google News RSS. More category-specific **free/keyless** adapters can be added without changing watch/article persistence. Paid search providers are intentionally not part of the default runtime.
+AI integration is split by responsibility:
 
-## AI boundaries
+- `WatchUnderstandingService` creates watch suggestions and deterministic quick-watch metadata.
+- `ArticleAnalyzerService` evaluates discovered articles.
+- `StructuredAiClient` is the provider boundary.
+- `GeminiClientService` contains only Gemini transport, structured JSON generation and temporary rate-limit cooldown behavior.
+- `local-ai.ts` contains deterministic fallbacks and has no network dependency.
 
-AI does not run the scheduler. It has two bounded jobs:
+This keeps product logic independent from one AI provider and makes the provider replaceable without changing watch or pipeline services.
 
-1. `interpretWatch(prompt)`: convert natural language to structured watch metadata.
-2. `analyzeArticle(watch, article)`: return relevance, importance, new-information flag, event type and short Turkish summary.
+## Discovery responsibilities
 
-The service requests structured JSON from Gemini 2.5 Flash-Lite. Gemini is optional: a local parser/classifier keeps the product usable when no key is configured or the free-tier quota/rate limit is unavailable. A 429 response temporarily opens a local circuit breaker so repeated failed Gemini calls are avoided.
+`SourcesService` is an orchestrator. Source-specific behavior lives behind focused services:
+
+- `GoogleNewsSourceService`: Google News RSS requests and parsing.
+- `OpenLibrarySourceService`: Open Library catalog requests.
+- `ArticleDeduplicatorService`: URL cleanup, title normalization, ordering and result limiting.
+
+Adding another discovery source does not require moving persistence or pipeline rules into the source layer.
+
+## Pipeline responsibilities
+
+`PipelineService` describes the use-case flow: load an active watch, discover candidates, enforce required terms, analyze, persist the match, decide whether to notify, and mark the watch as checked.
+
+Persistence is handled by `PipelineRepository`. Notification rules and event-key normalization are handled by `NotificationPolicyService`. The orchestrator therefore reads as application flow instead of mixing SQL/Prisma details with business policy.
+
+## Watch responsibilities
+
+`WatchesService` coordinates watch use cases. `WatchesRepository` owns Prisma access and `WatchUniquenessService` owns duplicate-watch rules. Watch parsing is delegated to `WatchUnderstandingService`.
 
 ## Notification policy
 
-All relevant articles are persisted in `WatchArticle`. Push is a separate decision. AI also emits a stable `eventKey`; reports of the same real-world event from multiple outlets stay in the feed but duplicate pushes are suppressed by the normalized event key:
+All relevant articles are persisted in `WatchArticle`; push is a separate decision:
 
-- `IMPORTANT_ONLY`: score >= threshold and new information.
+- `IMPORTANT_ONLY`: new information at or above the configured importance threshold.
 - `ALL_RELEVANT`: every newly attached relevant article.
-- `SELECTED_EVENTS`: only matching `notifyEvents` and new information.
+- `SELECTED_EVENTS`: new information matching configured event types.
 - `OFF`: never push.
 
-This separation is deliberate: the user can read every relevant article without being interrupted by every article.
+Normalized `eventKey` values suppress duplicate notifications for the same real-world development while keeping relevant articles available in the feed.

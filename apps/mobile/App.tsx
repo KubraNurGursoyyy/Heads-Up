@@ -9,12 +9,13 @@ import {
   View,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { ensureSingleUserSession } from './src/api';
+import { ensureAppSession, isDemoMode } from './src/api';
 import { registerPush, subscribePushResponses } from './src/push';
 import { colors, fontFamily, Loading } from './src/ui';
 import StartupSplash from './src/components/StartupSplash';
 import PinkBackground from './src/components/PinkBackground';
 import BottomTabs, { type AppTab } from './src/components/BottomTabs';
+import DemoBanner from './src/components/DemoBanner';
 import FeedScreen from './src/screens/FeedScreen';
 import AddWatchScreen from './src/screens/AddWatchScreen';
 import WatchesScreen from './src/screens/WatchesScreen';
@@ -43,7 +44,7 @@ export default function App() {
     setBootError(null);
 
     try {
-      await ensureSingleUserSession();
+      await ensureAppSession();
       if (Platform.OS !== 'web') {
         void registerPush().catch(() => undefined);
       }
@@ -104,6 +105,7 @@ export default function App() {
     <PinkBackground>
       <SafeAreaView style={styles.safeArea}>
         <ExpoStatusBar style="light" />
+        {isDemoMode ? <DemoBanner /> : null}
 
         <View style={styles.content}>
           {archiveOpen ? (

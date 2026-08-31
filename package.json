@@ -1,37 +1,37 @@
 {
-  "name": "@headsup/api",
-  "version": "0.1.0",
+  "name": "headsup",
   "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/api",
+    "apps/mobile"
+  ],
   "scripts": {
-    "build": "nest build",
-    "start": "node dist/main.js",
-    "start:dev": "nest start --watch",
-    "worker": "node dist/worker.js",
-    "worker:dev": "tsx watch src/worker.ts",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:deploy": "prisma migrate deploy",
-    "postinstall": "prisma generate"
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx}\"",
+    "install:all": "npm install",
+    "dev:api": "npm --workspace @headsup/api run start:dev",
+    "dev:worker": "npm --workspace @headsup/api run worker:dev",
+    "dev:mobile": "npm --workspace @headsup/mobile run start",
+    "build:api": "npm --workspace @headsup/api run build",
+    "prisma:generate": "npm --workspace @headsup/api run prisma:generate",
+    "prisma:migrate": "npm --workspace @headsup/api run prisma:migrate",
+    "prisma:deploy": "npm --workspace @headsup/api run prisma:deploy",
+    "test:unit": "node --experimental-strip-types --test apps/api/src/common/text-normalization.test.mjs apps/api/src/common/required-terms.test.mjs apps/api/src/articles/archive-pagination.test.mjs apps/api/src/sources/search-plan.test.mjs apps/api/src/sources/book-search.test.mjs apps/api/src/sources/rss-image.test.mjs apps/mobile/src/utils/watch-ui.test.mjs apps/mobile/src/utils/feed-topics.test.mjs",
+    "test:api": "npm run prisma:generate && npm run build:api",
+    "test:mobile": "npm --workspace @headsup/mobile run check",
+    "test": "npm run format:check && npm run test:unit && npm run test:api && npm run test:mobile && npm run test:web",
+    "dev:web": "npm --workspace @headsup/mobile run start:web",
+    "demo:web": "node scripts/demo-web.mjs start",
+    "demo:export": "node scripts/demo-web.mjs export",
+    "test:web": "npm --workspace @headsup/mobile run export:web",
+    "public:audit": "node scripts/public-audit.mjs",
+    "public:prepare": "powershell -ExecutionPolicy Bypass -File ./scripts/prepare-public.ps1"
   },
-  "dependencies": {
-    "@nestjs/common": "^11.1.0",
-    "@nestjs/config": "^4.0.2",
-    "@nestjs/core": "^11.1.0",
-    "@nestjs/jwt": "^11.0.0",
-    "@nestjs/platform-express": "^11.1.0",
-    "@prisma/client": "^6.15.0",
-    "bullmq": "^5.58.0",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.2",
-    "reflect-metadata": "^0.2.2",
-    "rss-parser": "^3.13.0",
-    "rxjs": "^7.8.2"
+  "engines": {
+    "node": ">=22.13.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.10",
-    "@types/node": "^24.3.0",
-    "prisma": "^6.15.0",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "prettier": "^3.9.6"
   }
 }
