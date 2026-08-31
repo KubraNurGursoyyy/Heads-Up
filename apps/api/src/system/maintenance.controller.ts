@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Headers,
-  HttpCode,
-  Post,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Headers, HttpCode, Post, UnauthorizedException } from '@nestjs/common';
 import { SchedulerService } from '../jobs/scheduler.service';
 
 @Controller('internal')

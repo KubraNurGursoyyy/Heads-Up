@@ -51,9 +51,7 @@ export class NotificationsService {
     });
 
     if (existingArticle) {
-      return existingArticle.status === 'SENT'
-        ? existingArticle
-        : this.deliver(existingArticle);
+      return existingArticle.status === 'SENT' ? existingArticle : this.deliver(existingArticle);
     }
 
     const notification = await this.prisma.notification.create({
@@ -109,8 +107,7 @@ export class NotificationsService {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const response = await fetch(
-          process.env.EXPO_PUSH_URL ??
-            'https://exp.host/--/api/v2/push/send',
+          process.env.EXPO_PUSH_URL ?? 'https://exp.host/--/api/v2/push/send',
           {
             method: 'POST',
             headers: {
@@ -161,10 +158,7 @@ export class NotificationsService {
             continue;
           }
 
-          if (
-            ticket?.details?.error === 'DeviceNotRegistered' &&
-            devices[index]
-          ) {
+          if (ticket?.details?.error === 'DeviceNotRegistered' && devices[index]) {
             await this.prisma.device.update({
               where: {
                 id: devices[index].id,
@@ -181,9 +175,7 @@ export class NotificationsService {
         }
 
         if (!tickets.length || okCount === 0) {
-          throw new Error(
-            lastError || 'Expo returned no successful push tickets',
-          );
+          throw new Error(lastError || 'Expo returned no successful push tickets');
         }
 
         return this.prisma.notification.update({
@@ -199,14 +191,10 @@ export class NotificationsService {
       } catch (error) {
         lastError = String(error);
 
-        this.logger.warn(
-          `push attempt ${attempt}/3 failed: ${lastError}`,
-        );
+        this.logger.warn(`push attempt ${attempt}/3 failed: ${lastError}`);
 
         if (attempt < 3) {
-          await new Promise(resolve =>
-            setTimeout(resolve, 800 * attempt),
-          );
+          await new Promise(resolve => setTimeout(resolve, 800 * attempt));
         }
       }
     }
