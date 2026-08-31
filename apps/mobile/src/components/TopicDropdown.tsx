@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { isDemoMode } from '../data/runtime';
 import { colors, fontFamily, fontFamilyMedium } from '../ui';
 import HighlightedTopic from './HighlightedTopic';
 
@@ -40,23 +41,36 @@ export default function TopicDropdown({
         onPress={() => setOpen(current => !current)}
         style={({ pressed }) => [
           styles.trigger,
+          isDemoMode && styles.demoTrigger,
           compact && styles.triggerCompact,
           pressed && styles.pressed,
         ]}
       >
         <View style={styles.triggerTextArea}>
-          {compact ? null : <Text style={styles.triggerMeta}>HABERLERİ FİLTRELE</Text>}
+          {compact ? null : (
+            <Text style={[styles.triggerMeta, isDemoMode && styles.demoTriggerMeta]}>
+              HABERLERİ FİLTRELE
+            </Text>
+          )}
           {selected ? (
             <HighlightedTopic
               text={selected.label}
               requiredTerms={selected.requiredTerms}
               numberOfLines={1}
-              style={[styles.triggerText, compact && styles.triggerTextCompact]}
+              style={[
+                styles.triggerText,
+                isDemoMode && styles.demoTriggerText,
+                compact && styles.triggerTextCompact,
+              ]}
             />
           ) : (
             <Text
               numberOfLines={1}
-              style={[styles.triggerText, compact && styles.triggerTextCompact]}
+              style={[
+                styles.triggerText,
+                isDemoMode && styles.demoTriggerText,
+                compact && styles.triggerTextCompact,
+              ]}
             >
               {allLabel}
             </Text>
@@ -112,19 +126,21 @@ export default function TopicDropdown({
 }
 
 const styles = StyleSheet.create({
-  root: {
-    marginTop: 8,
-  },
+  root: { marginTop: 8 },
   rootCompact: { marginTop: 4 },
   trigger: {
     minHeight: 54,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: isDemoMode ? 7 : 10,
     borderWidth: 1,
     borderColor: 'rgba(236,217,167,0.55)',
     backgroundColor: 'rgba(83,13,58,0.76)',
+  },
+  demoTrigger: {
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   triggerCompact: {
     minHeight: 36,
@@ -137,9 +153,10 @@ const styles = StyleSheet.create({
     fontFamily,
     color: colors.goldSoft,
     fontSize: 7,
-    fontWeight: '800',
+    fontWeight: isDemoMode ? '700' : '800',
     letterSpacing: 1.2,
   },
+  demoTriggerMeta: { color: colors.inkMuted, fontWeight: '600', letterSpacing: 0.7 },
   triggerText: {
     marginTop: 3,
     fontFamily: fontFamilyMedium,
@@ -147,6 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  demoTriggerText: { color: colors.ink, fontWeight: '700' },
   triggerTextCompact: { marginTop: 0, fontSize: 10 },
   chevron: {
     width: 22,
@@ -154,9 +172,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     transform: [{ rotate: '0deg' }],
   },
-  chevronOpen: {
-    transform: [{ rotate: '180deg' }],
-  },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
   chevronLeft: {
     position: 'absolute',
     width: 9,
@@ -178,38 +194,32 @@ const styles = StyleSheet.create({
   menu: {
     marginTop: 6,
     overflow: 'hidden',
-    borderRadius: 10,
+    borderRadius: isDemoMode ? 7 : 10,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
-    shadowColor: '#15000D',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.24,
+    shadowOpacity: isDemoMode ? 0.04 : 0.24,
     shadowRadius: 22,
     elevation: 8,
   },
-  optionsScroll: {
-    maxHeight: 220,
-  },
+  optionsScroll: { maxHeight: 220 },
   option: {
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(86,35,67,0.16)',
+    borderBottomColor: colors.border,
     backgroundColor: colors.surface,
   },
-  optionSelected: {
-    backgroundColor: '#E7BDD2',
-  },
+  optionSelected: { backgroundColor: isDemoMode ? colors.surfaceMuted : colors.surfaceStrong },
   optionRail: {
     alignSelf: 'stretch',
     width: 3,
     backgroundColor: 'transparent',
   },
-  optionRailSelected: {
-    backgroundColor: colors.goldDark,
-  },
+  optionRailSelected: { backgroundColor: colors.goldDark },
   optionText: {
     flex: 1,
     paddingHorizontal: 12,

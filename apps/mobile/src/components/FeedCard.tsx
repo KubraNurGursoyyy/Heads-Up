@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api';
+import { isDemoMode } from '../data/runtime';
 import type { FeedItem } from '../types';
 import { colors, fontFamily, fontFamilyMedium } from '../ui';
 import HighlightedTopic from './HighlightedTopic';
@@ -75,28 +76,31 @@ export function formatFeedDate(value?: string | null) {
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    marginBottom: 12,
-    borderRadius: 14,
+    marginBottom: isDemoMode ? 11 : 12,
+    borderRadius: isDemoMode ? 10 : 14,
     overflow: 'hidden',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#160511',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 22,
-    elevation: 5,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: isDemoMode ? 3 : 10 },
+    shadowOpacity: isDemoMode ? 0.025 : 0.22,
+    shadowRadius: isDemoMode ? 8 : 22,
+    elevation: isDemoMode ? 1 : 5,
   },
-  cardPressed: { opacity: 0.87, transform: [{ scale: 0.992 }] },
-  cardRail: { width: 5, backgroundColor: colors.magenta },
-  cardBody: { flex: 1, padding: 16 },
+  cardPressed: { opacity: 0.87, transform: [{ scale: 0.994 }] },
+  cardRail: {
+    width: isDemoMode ? 3 : 5,
+    backgroundColor: isDemoMode ? colors.gold : colors.magenta,
+  },
+  cardBody: { flex: 1, padding: isDemoMode ? 15 : 16 },
   mediaFrame: {
-    height: 118,
+    height: isDemoMode ? 132 : 118,
     marginBottom: 13,
     overflow: 'hidden',
-    borderRadius: 10,
+    borderRadius: isDemoMode ? 7 : 10,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     backgroundColor: colors.surfaceMuted,
   },
   mediaImage: { width: '100%', height: '100%' },
@@ -111,18 +115,18 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
   cardIndex: {
     fontFamily: fontFamilyMedium,
-    color: colors.magenta,
+    color: isDemoMode ? colors.goldDark : colors.magenta,
     fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontWeight: isDemoMode ? '700' : '800',
+    letterSpacing: isDemoMode ? 0.55 : 1,
   },
   cardTopRule: { flex: 1, height: 1, backgroundColor: colors.border },
   categoryText: {
     fontFamily: fontFamilyMedium,
-    color: colors.wine,
+    color: isDemoMode ? colors.inkSoft : colors.wine,
     fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontWeight: isDemoMode ? '700' : '800',
+    letterSpacing: isDemoMode ? 0.55 : 1,
   },
   topicText: {
     fontFamily,
@@ -134,12 +138,19 @@ const styles = StyleSheet.create({
   articleTitle: {
     fontFamily: fontFamilyMedium,
     color: colors.ink,
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: isDemoMode ? 16 : 16,
+    fontWeight: isDemoMode ? '700' : '800',
     lineHeight: 22,
     letterSpacing: -0.28,
   },
-  summary: { fontFamily, color: colors.inkSoft, marginTop: 7, lineHeight: 19, fontSize: 12 },
+  summary: {
+    fontFamily,
+    color: colors.inkSoft,
+    marginTop: 7,
+    lineHeight: 18,
+    fontSize: isDemoMode ? 11.5 : 12,
+    fontWeight: isDemoMode ? '400' : 'normal',
+  },
   footer: {
     marginTop: 13,
     paddingTop: 10,
@@ -153,5 +164,10 @@ const styles = StyleSheet.create({
   footerSeparator: { width: 1, height: 12, backgroundColor: colors.borderStrong },
   date: { fontFamily: fontFamilyMedium, color: colors.ink, fontSize: 9, fontWeight: '700' },
   footerGoldLine: { width: 17, height: 2, backgroundColor: colors.gold },
-  open: { fontFamily: fontFamilyMedium, color: colors.magenta, fontSize: 10, fontWeight: '800' },
+  open: {
+    fontFamily: fontFamilyMedium,
+    color: isDemoMode ? colors.goldDark : colors.magenta,
+    fontSize: 10,
+    fontWeight: '800',
+  },
 });

@@ -26,7 +26,7 @@ const watches: Watch[] = [
     topic: 'Stacy Schiff - Kleopatra',
     intent: 'Türkçe baskı ve erişilebilirlik gelişmelerini takip et.',
     category: 'Kitap',
-    requiredTerms: ['Kleopatra'],
+    requiredTerms: ['Schiff', 'Kleopatra'],
     notificationMode: 'ALL_RELEVANT',
     active: true,
     lastCheckedAt: isoHoursAgo(5),
@@ -38,7 +38,7 @@ const watches: Watch[] = [
     topic: 'TypeScript',
     intent: 'Yeni sürüm ve önemli duyuruları takip et.',
     category: 'Teknoloji',
-    requiredTerms: ['TypeScript'],
+    requiredTerms: [],
     notificationMode: 'SELECTED_EVENTS',
     active: true,
     lastCheckedAt: isoHoursAgo(8),
@@ -111,7 +111,7 @@ function makeFeedItem(index: number): FeedItem {
 
 export function createDemoState(): DemoState {
   return {
-    version: 1,
+    version: 2,
     watches: watches.map(watch => ({
       ...watch,
       _count: watch._count ? { ...watch._count } : undefined,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { isDemoMode } from '../data/runtime';
 import { colors, fontFamily, fontFamilyMedium } from '../ui';
 
 export type AppTab = 'feed' | 'add' | 'watches' | 'settings';
@@ -18,9 +19,9 @@ const tabs: Array<{ value: AppTab; label: string; short: string }> = [
 
 export default function BottomTabs({ active, onChange }: Props) {
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.goldTop} />
-      <View style={styles.root}>
+    <View style={[styles.wrapper, isDemoMode && styles.demoWrapper]}>
+      {!isDemoMode ? <View style={styles.goldTop} /> : null}
+      <View style={[styles.root, isDemoMode && styles.demoRoot]}>
         {tabs.map(tab => {
           const selected = active === tab.value;
           return (
@@ -29,12 +30,25 @@ export default function BottomTabs({ active, onChange }: Props) {
               onPress={() => onChange(tab.value)}
               style={({ pressed }) => [
                 styles.tab,
+                isDemoMode && styles.demoTab,
                 selected && styles.tabActive,
+                selected && isDemoMode && styles.demoTabActive,
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={[styles.index, selected && styles.indexActive]}>{tab.short}</Text>
-              <Text style={[styles.label, selected && styles.labelActive]}>{tab.label}</Text>
+              {!isDemoMode ? (
+                <Text style={[styles.index, selected && styles.indexActive]}>{tab.short}</Text>
+              ) : null}
+              <Text
+                style={[
+                  styles.label,
+                  isDemoMode && styles.demoLabel,
+                  selected && styles.labelActive,
+                  selected && isDemoMode && styles.demoLabelActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
               <View style={[styles.line, selected && styles.lineActive]} />
             </Pressable>
           );
@@ -49,6 +63,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 9,
     paddingTop: 4,
+  },
+  demoWrapper: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    backgroundColor: colors.background,
   },
   goldTop: {
     height: 1,
@@ -69,6 +89,18 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 8,
   },
+  demoRoot: {
+    minHeight: 58,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: colors.background,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   tab: {
     flex: 1,
     minWidth: 0,
@@ -78,10 +110,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  demoTab: { borderRadius: 0, paddingVertical: 10 },
   tabActive: {
     backgroundColor: '#74134E',
     borderWidth: 1,
     borderColor: 'rgba(236,217,167,0.28)',
+  },
+  demoTabActive: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
   index: {
     fontFamily,
@@ -90,9 +127,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
   },
-  indexActive: {
-    color: colors.goldSoft,
-  },
+  demoIndex: { color: colors.inkMuted },
+  indexActive: { color: colors.goldSoft },
+  demoIndexActive: { color: colors.goldDark },
   label: {
     fontFamily: fontFamilyMedium,
     color: '#D3A8BE',
@@ -100,18 +137,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 3,
   },
-  labelActive: {
-    color: colors.lightText,
-  },
+  demoLabel: { color: colors.inkMuted, fontWeight: '600', fontSize: 10 },
+  labelActive: { color: colors.lightText },
+  demoLabelActive: { color: colors.ink, fontWeight: '700' },
   line: {
     width: 16,
     height: 2,
     marginTop: 6,
     backgroundColor: 'transparent',
   },
-  lineActive: {
-    width: 30,
-    backgroundColor: colors.gold,
-  },
+  lineActive: { width: 20, backgroundColor: colors.gold },
   pressed: { opacity: 0.84 },
 });

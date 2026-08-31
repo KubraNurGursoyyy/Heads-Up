@@ -1,7 +1,7 @@
 import { createDemoState } from './demo-data';
 import type { DemoState } from './demo.types';
 
-const STORAGE_KEY = 'headsup_public_demo_v1';
+const STORAGE_KEY = 'headsup_public_demo_v2';
 let memoryState: DemoState | null = null;
 
 function clone(state: DemoState): DemoState {
@@ -19,7 +19,7 @@ export class DemoStore {
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as DemoState;
-        if (parsed.version === 1) return parsed;
+        if (parsed.version === 2) return parsed;
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }

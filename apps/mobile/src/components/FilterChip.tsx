@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { isDemoMode } from '../data/runtime';
 import { colors, fontFamilyMedium } from '../ui';
 
 type Props = {
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
   root: {
     minHeight: 36,
     paddingHorizontal: 11,
-    borderRadius: 8,
+    borderRadius: isDemoMode ? 6 : 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -48,31 +49,27 @@ const styles = StyleSheet.create({
     borderRadius: 7,
   },
   selected: {
-    backgroundColor: colors.surfaceStrong,
-    borderColor: colors.gold,
+    backgroundColor: isDemoMode ? colors.ink : colors.surfaceStrong,
+    borderColor: isDemoMode ? colors.ink : colors.gold,
   },
   marker: {
     width: 11,
     height: 2,
-    backgroundColor: colors.goldDark,
+    backgroundColor: isDemoMode ? colors.borderStrong : colors.goldDark,
   },
   markerCompact: { width: 8 },
   markerSelected: {
     width: 19,
-    backgroundColor: colors.magenta,
+    backgroundColor: isDemoMode ? colors.gold : colors.magenta,
   },
   text: {
     fontFamily: fontFamilyMedium,
     color: colors.inkSoft,
-    fontWeight: '700',
+    fontWeight: isDemoMode ? '600' : '700',
     fontSize: 10,
     letterSpacing: 0.1,
   },
   textCompact: { fontSize: 8 },
-  selectedText: {
-    color: colors.ink,
-  },
-  pressed: {
-    opacity: 0.76,
-  },
+  selectedText: { color: isDemoMode ? colors.white : colors.ink, fontWeight: '700' },
+  pressed: { opacity: 0.76 },
 });

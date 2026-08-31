@@ -50,13 +50,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.palePink,
     borderWidth: 1,
-    borderColor: '#F0C7DB',
+    borderColor: colors.border,
   },
   fill: {
     width: '100%',
     height: '100%',
     borderRadius: 999,
-    backgroundColor: colors.magenta,
+    backgroundColor: colors.gold,
   },
   label: {
     fontFamily,

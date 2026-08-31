@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { isDemoMode } from '../data/runtime';
 import { Button, colors, Field, fontFamily, fontFamilyMedium } from '../ui';
 import type { Watch } from '../types';
 import RequiredTermsPicker from './RequiredTermsPicker';
@@ -39,7 +40,6 @@ export default function EditWatchModal({ watch, busy = false, onClose, onSave }:
             İsteği değiştirebilir, haberde mutlaka bulunmasını istediğin kelimeleri yeniden
             seçebilirsin.
           </Text>
-
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -61,7 +61,6 @@ export default function EditWatchModal({ watch, busy = false, onClose, onSave }:
               compact
             />
           </ScrollView>
-
           <View style={styles.actions}>
             <Pressable onPress={onClose} disabled={busy} style={styles.cancel}>
               <Text style={styles.cancelText}>Vazgeç</Text>
@@ -85,31 +84,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: 'rgba(25,5,18,0.58)',
+    backgroundColor: isDemoMode ? 'rgba(39,35,31,0.38)' : 'rgba(25,5,18,0.58)',
   },
   modal: {
     width: '100%',
-    maxWidth: 470,
+    maxWidth: isDemoMode ? 400 : 470,
     maxHeight: '84%',
     padding: 20,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
+    borderRadius: isDemoMode ? 10 : 18,
+    backgroundColor: isDemoMode ? colors.background : colors.surface,
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
   goldLine: { width: 42, height: 2, backgroundColor: colors.gold, marginBottom: 12 },
   kicker: {
     fontFamily: fontFamilyMedium,
-    color: colors.magenta,
+    color: isDemoMode ? colors.goldDark : colors.magenta,
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: isDemoMode ? '700' : '800',
     letterSpacing: 1.4,
   },
   title: {
     fontFamily: fontFamilyMedium,
     color: colors.ink,
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: isDemoMode ? '700' : '800',
     marginTop: 5,
   },
   description: { fontFamily, color: colors.inkSoft, fontSize: 11, lineHeight: 17, marginTop: 6 },
@@ -131,6 +130,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
-  cancelText: { fontFamily: fontFamilyMedium, color: colors.ink, fontSize: 11, fontWeight: '800' },
+  cancelText: {
+    fontFamily: fontFamilyMedium,
+    color: colors.ink,
+    fontSize: 11,
+    fontWeight: isDemoMode ? '700' : '800',
+  },
   save: { minWidth: 120, marginTop: 0 },
 });

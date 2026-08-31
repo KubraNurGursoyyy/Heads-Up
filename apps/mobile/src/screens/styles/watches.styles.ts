@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { isDemoMode } from '../../data/runtime';
 import { colors, fontFamily } from '../../ui';
 
 export const styles = StyleSheet.create({
@@ -9,9 +10,9 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 11,
     borderRadius: 10,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: isDemoMode ? '#FFF1EC' : colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#D98BAA',
+    borderColor: isDemoMode ? '#D9A39A' : '#D98BAA',
   },
   globalErrorText: { fontFamily, color: colors.danger, fontSize: 11, lineHeight: 16 },
   list: { paddingHorizontal: 18, paddingBottom: 32 },
@@ -21,15 +22,15 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
     padding: 26,
-    borderRadius: 18,
+    borderRadius: isDemoMode ? 10 : 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: isDemoMode ? colors.border : colors.borderStrong,
   },
   emptyLine: { width: 44, height: 2, backgroundColor: colors.gold, marginBottom: 14 },
   emptyKicker: {
     fontFamily,
-    color: colors.magenta,
+    color: isDemoMode ? colors.goldDark : colors.magenta,
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.4,

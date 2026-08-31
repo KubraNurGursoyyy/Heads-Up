@@ -10,34 +10,29 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { isDemoMode } from './data/runtime';
 
-export const colors = {
+const appColors = {
   background: '#350727',
   backgroundStrong: '#52103E',
   backgroundViolet: '#32104B',
-
   surface: '#F3D9E7',
   surfaceMuted: '#E9C5D8',
   surfaceStrong: '#DFAEC8',
-
   ink: '#171116',
   inkSoft: '#4D3745',
   inkMuted: '#78616F',
-
   wine: '#43072E',
   wineSoft: '#71164E',
   magenta: '#D92C82',
   hotPink: '#F06CA9',
   pink: '#F1A0C5',
   palePink: '#F5D7E6',
-
   violet: '#8D4CB7',
   lavender: '#D6B9E5',
-
   gold: '#D0A95C',
   goldSoft: '#ECD9A7',
   goldDark: '#9D7735',
-
   border: '#C98EAA',
   borderStrong: '#9B4D78',
   lightText: '#F9EAF3',
@@ -45,18 +40,46 @@ export const colors = {
   danger: '#94244E',
 };
 
-// Web'de TT Norms Pro cihazda kuruluysa doğrudan onu kullanır.
-// Native'de font dosyası ayrıca yüklenmediği sürece modern sistem sans-serif kullanılır.
+const demoColors = {
+  background: '#FFFFFF',
+  backgroundStrong: '#FFF7EE',
+  backgroundViolet: '#F5F3EF',
+  surface: '#F7F5F0',
+  surfaceMuted: '#EFEDE7',
+  surfaceStrong: '#FFF0D8',
+  ink: '#191918',
+  inkSoft: '#55524D',
+  inkMuted: '#858078',
+  wine: '#20201E',
+  wineSoft: '#45423D',
+  magenta: '#C9962D',
+  hotPink: '#E8A160',
+  pink: '#F1BD78',
+  palePink: '#FBF5E9',
+  violet: '#A9AB9A',
+  lavender: '#E1E2D8',
+  gold: '#C99A33',
+  goldSoft: '#EEDAA3',
+  goldDark: '#8D6516',
+  border: '#E1DED7',
+  borderStrong: '#C7C2B9',
+  lightText: '#FFFFFF',
+  white: '#FFFFFF',
+  danger: '#963F34',
+};
+
+export const colors = isDemoMode ? demoColors : appColors;
+
 export const fontFamily = Platform.select({
   ios: 'Avenir Next',
   android: 'sans-serif',
-  web: '"TT Norms Pro", "Avenir Next", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  web: '"Segoe UI Variable Text", Inter, "Helvetica Neue", Arial, sans-serif',
 });
 
 export const fontFamilyMedium = Platform.select({
   ios: 'Avenir Next',
   android: 'sans-serif-medium',
-  web: '"TT Norms Pro", "Avenir Next", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  web: '"Segoe UI Variable Display", Inter, "Helvetica Neue", Arial, sans-serif',
 });
 
 type ButtonProps = {
@@ -117,7 +140,7 @@ export function Field(props: TextInputProps) {
 export function Loading({ label = 'HeadsUp hazırlanıyor' }: { label?: string }) {
   return (
     <View style={styles.loading}>
-      <ActivityIndicator size="small" color={colors.goldSoft} />
+      <ActivityIndicator size="small" color={isDemoMode ? colors.goldDark : colors.goldSoft} />
       <Text style={styles.loadingText}>{label}</Text>
     </View>
   );
@@ -128,7 +151,7 @@ export function Divider() {
     <View style={styles.dividerRow}>
       <View style={styles.divider} />
       <View style={styles.dividerGold} />
-      <View style={styles.dividerPink} />
+      <View style={styles.dividerAccent} />
     </View>
   );
 }
@@ -174,15 +197,15 @@ export const ui = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 15,
+    borderRadius: isDemoMode ? 10 : 15,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 18,
-    shadowColor: '#160511',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 28,
-    elevation: 5,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: isDemoMode ? 0.025 : 0.2,
+    shadowRadius: isDemoMode ? 12 : 28,
+    elevation: isDemoMode ? 1 : 5,
   },
   chip: {
     paddingHorizontal: 13,
@@ -197,7 +220,7 @@ export const ui = StyleSheet.create({
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    borderRadius: 10,
+    borderRadius: isDemoMode ? 7 : 10,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
@@ -205,50 +228,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   primaryButton: {
-    backgroundColor: colors.magenta,
-    borderColor: '#F174AD',
+    backgroundColor: isDemoMode ? colors.wine : colors.magenta,
+    borderColor: isDemoMode ? colors.gold : '#F174AD',
   },
   secondaryButton: {
     backgroundColor: colors.surface,
     borderColor: colors.borderStrong,
   },
   dangerButton: {
-    backgroundColor: '#E8C1D3',
-    borderColor: '#B45D83',
+    backgroundColor: isDemoMode ? '#FFF1EC' : '#E8C1D3',
+    borderColor: isDemoMode ? '#D9A39A' : '#B45D83',
   },
   buttonText: {
     fontFamily: fontFamilyMedium,
     fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.25,
+    fontWeight: isDemoMode ? '700' : '800',
+    letterSpacing: isDemoMode ? 0 : 0.15,
   },
-  primaryButtonText: {
-    color: colors.lightText,
-  },
-  secondaryButtonText: {
-    color: colors.ink,
-  },
-  dangerButtonText: {
-    color: colors.danger,
-  },
-  pressed: {
-    transform: [{ scale: 0.986 }],
-    opacity: 0.86,
-  },
-  disabled: {
-    opacity: 0.42,
-  },
+  primaryButtonText: { color: colors.lightText },
+  secondaryButtonText: { color: colors.ink },
+  dangerButtonText: { color: colors.danger },
+  pressed: { transform: [{ scale: 0.988 }], opacity: 0.86 },
+  disabled: { opacity: 0.42 },
   field: {
     minHeight: 52,
-    borderRadius: 10,
+    borderRadius: isDemoMode ? 7 : 10,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    backgroundColor: '#F0D2E1',
+    backgroundColor: isDemoMode ? colors.background : '#F0D2E1',
     paddingHorizontal: 15,
     paddingVertical: 13,
     color: colors.ink,
     fontFamily,
-    fontSize: 15,
+    fontSize: isDemoMode ? 14 : 15,
   },
   loading: {
     flex: 1,
@@ -258,7 +270,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily,
-    color: colors.lightText,
+    color: isDemoMode ? colors.inkSoft : colors.lightText,
     fontWeight: '600',
     fontSize: 12,
     letterSpacing: 0.2,
@@ -272,24 +284,20 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(244,208,226,0.34)',
+    backgroundColor: isDemoMode ? colors.border : 'rgba(244,208,226,0.34)',
   },
-  dividerGold: {
-    width: 30,
-    height: 2,
-    backgroundColor: colors.gold,
-  },
-  dividerPink: {
+  dividerGold: { width: 30, height: 2, backgroundColor: colors.gold },
+  dividerAccent: {
     width: 12,
     height: 2,
-    backgroundColor: colors.hotPink,
+    backgroundColor: isDemoMode ? colors.gold : appColors.hotPink,
   },
   sectionLabel: {
     fontFamily: fontFamilyMedium,
-    color: colors.goldSoft,
+    color: isDemoMode ? colors.goldDark : colors.goldSoft,
     fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.65,
+    fontWeight: isDemoMode ? '700' : '800',
+    letterSpacing: isDemoMode ? 0.85 : 1.55,
     textTransform: 'uppercase',
   },
 });

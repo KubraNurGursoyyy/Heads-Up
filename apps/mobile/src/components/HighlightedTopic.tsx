@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, type StyleProp, type TextProps, type TextStyle } from 'react-native';
+import { isDemoMode } from '../data/runtime';
 import { colors, fontFamilyMedium } from '../ui';
 import { foldUiText } from '../utils/watch-ui';
 
@@ -29,8 +30,8 @@ export default function HighlightedTopic({ text, requiredTerms, style, ...props 
 
 const styles = StyleSheet.create({
   highlight: {
-    color: '#C10F69',
+    color: isDemoMode ? colors.goldDark : '#C10F69',
     fontFamily: fontFamilyMedium,
-    fontWeight: '900',
+    fontWeight: isDemoMode ? '700' : '900',
   },
 });
